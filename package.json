@@ -1,0 +1,25 @@
+{
+  "name": "em-scattering-mom-simulation",
+  "version": "1.0.0",
+  "description": "Interactive Electromagnetic Wave Scattering, Surface Current Induction, and Method of Moments (MoM) Simulator",
+  "main": "index.html",
+  "scripts": {
+    "start": "serve . -l 5500",
+    "dev": "serve . -l 5500"
+  },
+  "keywords": [
+    "electromagnetics",
+    "method-of-moments",
+    "maxwell-equations",
+    "physics-simulation",
+    "wave-scattering",
+    "html5-canvas",
+    "katex",
+    "educational"
+  ],
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "serve": "^14.2.4"
+  }
+}

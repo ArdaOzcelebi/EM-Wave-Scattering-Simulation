@@ -1,0 +1,1010 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+  <title>EM Wave Scattering — 3D Perspective Story</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet"/>
+  <!-- KaTeX -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body {
+      width: 100%; height: 100%; overflow: hidden;
+      background: #04080f; color: #e2eaf5; font-family: 'Inter', sans-serif;
+    }
+
+    canvas {
+      display: block; position: fixed; inset: 0; width: 100%; height: 100%;
+      cursor: grab;
+    }
+    canvas:active { cursor: grabbing; }
+
+    /* ── Top Navigation Bar ── */
+    #navbar {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 30;
+      display: flex; align-items: center; gap: 14px;
+      padding: 12px 24px;
+      background: rgba(4,8,15,.82);
+      backdrop-filter: blur(14px);
+      border-bottom: 1px solid rgba(255,255,255,.08);
+    }
+    #navbar .logo {
+      width: 34px; height: 34px;
+      border-radius: 9px;
+      background: linear-gradient(135deg, #00c8ff, #7c5cfc);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 17px; flex-shrink: 0;
+      box-shadow: 0 0 12px rgba(0, 200, 255, 0.35);
+    }
+    #navbar .brand h1 { font-size: .98rem; font-weight: 700; color: #fff; letter-spacing: .02em; }
+    #navbar .brand p  { font-size: .71rem; color: #7c94b2; }
+
+    .nav-tabs {
+      display: flex; gap: 8px; align-items: center; margin-left: 14px;
+    }
+    .nav-link {
+      display: flex; align-items: center; gap: 6px;
+      text-decoration: none; color: #7c94b2;
+      font-size: .74rem; font-weight: 600;
+      padding: 5px 12px; border-radius: 20px;
+      border: 1px solid transparent;
+      transition: all .2s;
+    }
+    .nav-link:hover { color: #fff; border-color: rgba(255,255,255,.15); background: rgba(255,255,255,.03); }
+    .nav-link.active {
+      color: #00c8ff;
+      border-color: rgba(0,200,255,.35);
+      background: rgba(0,200,255,.08);
+      box-shadow: 0 0 10px rgba(0,200,255,.15);
+    }
+
+    /* Phase Step Pills */
+    #steps {
+      display: flex; gap: 7px; align-items: center;
+      margin-left: auto;
+    }
+    .step-dot {
+      display: flex; align-items: center; gap: 6px;
+      padding: 5px 12px; border-radius: 20px;
+      font-size: .71rem; font-weight: 600; letter-spacing: .03em;
+      border: 1px solid rgba(255,255,255,.1);
+      color: #627891;
+      cursor: pointer; transition: all .25s;
+      white-space: nowrap; background: rgba(255,255,255,.02);
+    }
+    .step-dot:hover { color: #e2eaf5; border-color: rgba(255,255,255,.2); }
+    .step-dot.active-0 { color: #00c8ff; border-color: rgba(0,200,255,.5); background: rgba(0,200,255,.1); box-shadow: 0 0 10px rgba(0,200,255,.2); }
+    .step-dot.active-1 { color: #39ff8f; border-color: rgba(57,255,143,.5); background: rgba(57,255,143,.1); box-shadow: 0 0 10px rgba(57,255,143,.2); }
+    .step-dot.active-2 { color: #ff6b6b; border-color: rgba(255,107,107,.5); background: rgba(255,107,107,.1); box-shadow: 0 0 10px rgba(255,107,107,.2); }
+    .step-dot.active-3 { color: #ffc857; border-color: rgba(255,200,87,.5); background: rgba(255,200,87,.1); box-shadow: 0 0 10px rgba(255,200,87,.2); }
+    .sdot { width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
+
+    /* ── Bottom Floating Controls ── */
+    #controls {
+      position: fixed; bottom: 0; left: 0; right: 0; z-index: 20;
+      display: flex; align-items: center; gap: 14px;
+      padding: 10px 24px;
+      background: rgba(4,8,15,.82);
+      backdrop-filter: blur(14px);
+      border-top: 1px solid rgba(255,255,255,.08);
+      flex-wrap: wrap;
+    }
+    .leg { display: flex; align-items: center; gap: 7px; font-size: .7rem; color: #7c94b2; }
+    .lbar { width: 20px; height: 2.5px; border-radius: 2px; }
+    .ctrl { margin-left: auto; display: flex; gap: 8px; align-items: center; }
+    .btn {
+      padding: 5px 13px; border-radius: 7px;
+      border: 1px solid rgba(255,255,255,.12);
+      background: rgba(255,255,255,.03); color: #a0b4c8;
+      font-family: 'Inter', sans-serif; font-size: .74rem; font-weight: 600;
+      cursor: pointer; transition: all .2s;
+    }
+    .btn:hover { border-color: rgba(0,200,255,.45); color: #00c8ff; background: rgba(0,200,255,.06); }
+    .speed-lbl { font-size: .7rem; color: #7c94b2; }
+    input[type=range].sp {
+      width: 75px; height: 4px; cursor: pointer;
+      -webkit-appearance: none; border-radius: 4px;
+      background: rgba(255,255,255,.15);
+    }
+    input[type=range].sp::-webkit-slider-thumb {
+      -webkit-appearance: none; width: 13px; height: 13px;
+      border-radius: 50%; background: #00c8ff; cursor: pointer;
+      box-shadow: 0 0 6px #00c8ff;
+    }
+
+    /* ── Interactive Story Narration Card ── */
+    #story {
+      position: fixed; left: 0; right: 0; z-index: 15;
+      pointer-events: none;
+      display: flex; flex-direction: column;
+      align-items: center;
+      bottom: 74px;
+      transition: opacity .4s;
+    }
+    #story-card {
+      pointer-events: auto;
+      background: rgba(7, 14, 25, 0.88);
+      backdrop-filter: blur(20px);
+      border: 1px solid rgba(255,255,255,.12);
+      border-radius: 16px;
+      padding: 18px 28px;
+      width: 620px; max-width: 92vw;
+      text-align: center;
+      box-shadow: 0 16px 40px rgba(0,0,0,.5);
+    }
+    #story-phase {
+      font-size: .68rem; font-weight: 700; letter-spacing: .12em;
+      text-transform: uppercase; margin-bottom: 5px;
+    }
+    #story-title { font-size: 1.12rem; font-weight: 700; margin-bottom: 6px; color: #e2eaf5; }
+    #story-body  { font-size: .8rem; line-height: 1.65; color: #a8bcd4; }
+    #story-eq {
+      display: block;
+      margin-top: 10px; padding: 10px 16px;
+      border-radius: 8px;
+      background: rgba(255,255,255,.05);
+      border: 1px solid rgba(255,255,255,.1);
+      overflow-x: auto;
+      text-align: center;
+    }
+    /* KaTeX override */
+    #story-eq .katex,
+    #story-eq .katex *,
+    #story-eq .katex-display,
+    #story-eq .katex-display * { color: #ffc857 !important; }
+    #story-eq .katex { font-size: .95rem !important; }
+    #story-eq .katex-display { margin: 0; }
+
+    /* Card Navigation Row */
+    .story-nav-row {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-top: 12px; padding-top: 10px;
+      border-top: 1px solid rgba(255,255,255,.08);
+    }
+    .card-btn {
+      background: rgba(255,255,255,.06);
+      border: 1px solid rgba(255,255,255,.12);
+      color: #c5ddf0; border-radius: 7px;
+      padding: 5px 12px; font-size: .72rem; font-weight: 600;
+      cursor: pointer; transition: all .2s; font-family: inherit;
+    }
+    .card-btn:hover { background: rgba(0,200,255,.12); border-color: rgba(0,200,255,.4); color: #00c8ff; }
+
+    /* Progress bar */
+    #prog-bar {
+      width: 620px; max-width: 92vw;
+      height: 3px; background: rgba(255,255,255,.08);
+      border-radius: 3px; margin-top: 10px; overflow: hidden;
+    }
+    #prog-fill {
+      height: 100%; border-radius: 3px;
+      transition: width .1s linear;
+      background: linear-gradient(90deg, #00c8ff, #7c5cfc);
+    }
+
+    /* 3D Interaction Hint */
+    #orbit-hint {
+      position: fixed; left: 24px; top: 76px; z-index: 15;
+      font-size: .7rem; color: #7c94b2;
+      background: rgba(4,8,15,.7); border: 1px solid rgba(255,255,255,.08);
+      padding: 6px 12px; border-radius: 20px;
+      backdrop-filter: blur(10px); pointer-events: none;
+      display: flex; align-items: center; gap: 6px;
+    }
+
+    /* Coordinate axes label */
+    #axes-label {
+      position: fixed; right: 24px; top: 76px; z-index: 15;
+      font-size: .67rem; color: #627891;
+      background: rgba(4,8,15,.7); border: 1px solid rgba(255,255,255,.08);
+      padding: 8px 12px; border-radius: 10px;
+      backdrop-filter: blur(10px); pointer-events: none;
+      line-height: 1.6;
+    }
+
+    @media (max-width: 860px) {
+      .nav-tabs { display: none; }
+      #axes-label, #orbit-hint { display: none; }
+      #story-card { width: 95vw; padding: 14px 18px; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ── TOP NAVIGATION ── -->
+<div id="navbar">
+  <div class="logo">⚡</div>
+  <div class="brand">
+    <h1>EM Wave Scattering — 3D Perspective</h1>
+    <p>Spatial Wavevectors · Induced Current Vectors · Scattered Field Radiation</p>
+  </div>
+
+  <nav class="nav-tabs">
+    <a href="index.html" class="nav-link">🔬 2D Field Lab</a>
+    <a href="simulation2.html" class="nav-link active">🌐 3D Wave Story</a>
+  </nav>
+
+  <div id="steps">
+    <div class="step-dot active-0" onclick="jumpTo(0)"><span class="sdot"></span>① Incident</div>
+    <div class="step-dot" onclick="jumpTo(1)"><span class="sdot"></span>② Surface Jₛ</div>
+    <div class="step-dot" onclick="jumpTo(2)"><span class="sdot"></span>③ Scattered</div>
+    <div class="step-dot" onclick="jumpTo(3)"><span class="sdot"></span>④ Total Field</div>
+  </div>
+</div>
+
+<canvas id="sim2"></canvas>
+
+<!-- ── 3D HINT ── -->
+<div id="orbit-hint">
+  <span>🖱️</span> Drag to orbit 3D view · Scroll to zoom
+</div>
+
+<!-- ── AXES HINT ── -->
+<div id="axes-label">
+  <strong>Coordinate Frame:</strong><br>
+  Y ↑ (Surface Normal n̂)<br>
+  X → (Along Plate Length)<br>
+  Z ↗ (Into Scene Depth)<br>
+  <span style="color:#00c8ff">k̂ᵢ = (1,−1,0)/√2</span><br>
+  <span style="color:#ff6b6b">k̂ₛ = (1,+1,0)/√2</span>
+</div>
+
+<!-- ── STORY NARRATION CARD ── -->
+<div id="story">
+  <div id="story-card">
+    <div id="story-phase" style="color:#00c8ff">PHASE 1 — INCIDENT FIELD</div>
+    <div id="story-title">The EM Wave Arrives</div>
+    <div id="story-body">A plane electromagnetic wave propagates toward the conducting surface. The oscillating <strong style="color:#00c8ff">E-field</strong> and <strong style="color:#39ff8f">H-field</strong> are orthogonal to each other and to the direction of travel.</div>
+    <div id="story-eq"></div>
+
+    <div class="story-nav-row">
+      <button class="card-btn" onclick="prevPhase()">⏴ Prev Phase</button>
+      <button class="card-btn" id="autoBtn" onclick="toggleAutoCycle()">⏸ Auto-Cycle: ON</button>
+      <button class="card-btn" onclick="nextPhase()">Next Phase ⏵</button>
+    </div>
+  </div>
+  <div id="prog-bar"><div id="prog-fill" style="width:0%"></div></div>
+</div>
+
+<!-- ── BOTTOM BAR ── -->
+<div id="controls">
+  <div class="leg"><div class="lbar" style="background:#00c8ff;box-shadow:0 0 5px #00c8ff"></div>Eᵢ</div>
+  <div class="leg"><div class="lbar" style="background:#39ff8f;box-shadow:0 0 5px #39ff8f"></div>Hᵢ</div>
+  <div class="leg"><div class="lbar" style="background:#ff6b35;box-shadow:0 0 5px #ff6b35"></div>Jₛ</div>
+  <div class="leg"><div class="lbar" style="background:#ff6b6b;box-shadow:0 0 5px #ff6b6b"></div>Eₛ</div>
+  <div class="leg"><div class="lbar" style="background:#ffa94d;box-shadow:0 0 5px #ffa94d"></div>Hₛ</div>
+  <div class="leg"><div class="lbar" style="background:#ffc857;box-shadow:0 0 5px #ffc857"></div>PEC Plate</div>
+
+  <div class="ctrl">
+    <button class="btn" onclick="resetCamera()">↺ Reset 3D View</button>
+    <span class="speed-lbl">Speed</span>
+    <input type="range" class="sp" min="0.3" max="3" step="0.1" value="1" oninput="SIM_SPEED=+this.value">
+    <button class="btn" id="playBtn" onclick="togglePlay()">⏸ Pause</button>
+    <button class="btn" onclick="restartCycle()">↺ Restart</button>
+  </div>
+</div>
+
+<script>
+'use strict';
+// ════════════════════════════════════════════════════
+//   CANVAS SETUP & RETINA SCALING
+// ════════════════════════════════════════════════════
+const canvas = document.getElementById('sim2');
+const ctx    = canvas.getContext('2d');
+let cssW, cssH;
+
+function resize() {
+  cssW = window.innerWidth;
+  cssH = window.innerHeight;
+  const dpr = window.devicePixelRatio || 1;
+  canvas.width  = Math.floor(cssW * dpr);
+  canvas.height = Math.floor(cssH * dpr);
+}
+resize();
+window.addEventListener('resize', resize);
+
+// ════════════════════════════════════════════════════
+//   INTERACTIVE 3D CAMERA & ORBIT CONTROLS
+// ════════════════════════════════════════════════════
+const DEFAULT_YAW   = -38 * Math.PI / 180;
+const DEFAULT_PITCH =  25 * Math.PI / 180;
+const DEFAULT_DIST  = 820;
+
+let camYaw   = DEFAULT_YAW;
+let camPitch = DEFAULT_PITCH;
+let camDist  = DEFAULT_DIST;
+const PSCALE = 1.55;
+
+function resetCamera() {
+  camYaw = DEFAULT_YAW;
+  camPitch = DEFAULT_PITCH;
+  camDist = DEFAULT_DIST;
+}
+
+// Mouse Drag to Orbit
+let isDragging = false;
+let startMouse = { x: 0, y: 0 };
+let startCam   = { yaw: 0, pitch: 0 };
+
+canvas.addEventListener('mousedown', e => {
+  isDragging = true;
+  startMouse = { x: e.clientX, y: e.clientY };
+  startCam   = { yaw: camYaw, pitch: camPitch };
+});
+window.addEventListener('mousemove', e => {
+  if (!isDragging) return;
+  const dx = e.clientX - startMouse.x;
+  const dy = e.clientY - startMouse.y;
+  camYaw   = startCam.yaw + dx * 0.007;
+  camPitch = Math.max(-0.15, Math.min(1.4, startCam.pitch + dy * 0.007));
+});
+window.addEventListener('mouseup', () => { isDragging = false; });
+
+// Wheel Zoom
+canvas.addEventListener('wheel', e => {
+  e.preventDefault();
+  camDist = Math.max(450, Math.min(1450, camDist + e.deltaY * 0.75));
+}, { passive: false });
+
+// Touch Drag support
+canvas.addEventListener('touchstart', e => {
+  if (e.touches.length === 1) {
+    isDragging = true;
+    startMouse = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+    startCam   = { yaw: camYaw, pitch: camPitch };
+  }
+});
+canvas.addEventListener('touchmove', e => {
+  if (!isDragging || e.touches.length !== 1) return;
+  const dx = e.touches[0].clientX - startMouse.x;
+  const dy = e.touches[0].clientY - startMouse.y;
+  camYaw   = startCam.yaw + dx * 0.007;
+  camPitch = Math.max(-0.15, Math.min(1.4, startCam.pitch + dy * 0.007));
+});
+canvas.addEventListener('touchend', () => { isDragging = false; });
+
+/** Project world (x,y,z) → screen {sx,sy,sz,s} */
+function project(x, y, z) {
+  const cosYaw = Math.cos(camYaw),   sinYaw = Math.sin(camYaw);
+  const cosPit = Math.cos(camPitch), sinPit = Math.sin(camPitch);
+
+  // Yaw around Y
+  const rx   = x * cosYaw + z * sinYaw;
+  const rz1  = -x * sinYaw + z * cosYaw;
+  // Pitch around X
+  const ry2  = y * cosPit - rz1 * sinPit;
+  const rz2  = y * sinPit + rz1 * cosPit;
+  // Perspective
+  const s    = camDist / (camDist + rz2 + 180);
+  return {
+    sx: cssW * 0.48 + rx * s * PSCALE,
+    sy: cssH * 0.52 - ry2 * s * PSCALE,
+    sz: rz2, s
+  };
+}
+
+// ════════════════════════════════════════════════════
+//   VECTOR MATH
+// ════════════════════════════════════════════════════
+const norm3  = v => { const l = Math.hypot(...v); return v.map(c => c / l); };
+const add3   = (a, b) => a.map((c, i) => c + b[i]);
+const scale3 = (v, s) => v.map(c => c * s);
+
+// ════════════════════════════════════════════════════
+//   SCENE GEOMETRY
+// ════════════════════════════════════════════════════
+// Incident wave: 45° angle to plate
+const kInc  = norm3([1, -1, 0]);
+const eInc  = norm3([1,  1, 0]);
+const hInc  = [0, 0, 1];
+
+// Scattered wave off horizontal PEC plate
+const kScat = norm3([1, 1, 0]);
+const eScat = norm3([-1, 1, 0]);
+const hScat = [0, 0, -1];
+
+const WAVE_START  = [-300, 300, 0];
+const WAVE_LEN    = 435;
+const SCAT_START  = [0, 4, 0];
+const SCAT_LEN    = 380;
+
+const K_WAVE  = 0.038;
+const W_FREQ  = 3.2;
+const AMP_E   = 72;
+const AMP_H   = 55;
+
+// Plate dimensions
+const PW = 340, PD = 200, PT = 22;
+
+// ════════════════════════════════════════════════════
+//   STORY PHASES CONFIGURATION
+// ════════════════════════════════════════════════════
+const PHASE_DUR = 5.5;
+let autoCycle   = true;
+
+const PHASES = [
+  {
+    id:    0,
+    label: 'PHASE 1 — INCIDENT FIELD',
+    title: 'The EM Wave Arrives',
+    body:  'A plane electromagnetic wave propagates toward the conductor. The oscillating <strong style="color:#00c8ff">E-field</strong> (blue) and <strong style="color:#39ff8f">H-field</strong> (green) are mutually orthogonal and both perpendicular to the propagation direction k̂.',
+    eq:    '\\vec{E}_i = E_0 \\cos(\\mathbf{k}\\cdot\\mathbf{r} - \\omega t)\\,\\hat{e}',
+    color: '#00c8ff',
+    showInc: true, showCur: false, showScat: false, showLabel: 'inc',
+  },
+  {
+    id:    1,
+    label: 'PHASE 2 — INDUCED SURFACE CURRENT',
+    title: 'The Lorentz Force Acts',
+    body:  'The incident <strong style="color:#00c8ff">E-field</strong> exerts a Lorentz force on the free electrons in the PEC. They accelerate, forming an oscillating <strong style="color:#ff6b35">surface current Jₛ</strong> that follows the phase of the incident wave across the surface.',
+    eq:    '\\vec{J}_s = \\hat{n} \\times \\vec{H}_{\\text{total}}',
+    color: '#39ff8f',
+    showInc: true, showCur: true, showScat: false, showLabel: 'cur',
+  },
+  {
+    id:    2,
+    label: 'PHASE 3 — SCATTERED FIELD',
+    title: 'Every Current Re-radiates',
+    body:  'Each current element on the surface acts like a Hertzian dipole, radiating a secondary <strong style="color:#ff6b6b">scattered field</strong>. The coherent superposition of all these micro-radiators forms the reflected wave — which carries energy away from the surface.',
+    eq:    '\\hat{n}\\times(\\vec{E}_i + \\vec{E}_s) = 0 \\quad \\text{on }S',
+    color: '#ff6b6b',
+    showInc: false, showCur: true, showScat: true, showLabel: 'scat',
+  },
+  {
+    id:    3,
+    label: 'PHASE 4 — TOTAL FIELD & INTERFERENCE',
+    title: 'Superposition: Standing Wave Pattern',
+    body:  'Total field = Incident + Scattered. On the PEC surface, tangential total E is exactly zero (they cancel). Above the surface, incident and scattered waves interfere to form stationary <strong style="color:#ffc857">standing wave nodal planes</strong>.',
+    eq:    '\\vec{E}_{\\text{total}} = \\vec{E}_i + \\vec{E}_s \\quad (= 0 \\text{ on surface})',
+    color: '#ffc857',
+    showInc: true, showCur: true, showScat: true, showLabel: 'all',
+  },
+];
+
+let t         = 0;
+let phaseIdx  = 0;
+let phaseTime = 0;
+let playing   = true;
+let SIM_SPEED = 1.0;
+let incAlpha  = 1, curAlpha = 0, scatAlpha = 0;
+
+// ════════════════════════════════════════════════════
+//   DRAWING UTILITIES
+// ════════════════════════════════════════════════════
+function drawArrow2D(x1, y1, x2, y2, hLen, fillColor) {
+  const dx = x2 - x1, dy = y2 - y1;
+  const len = Math.hypot(dx, dy);
+  if (len < 2) return;
+  const ux = dx / len, uy = dy / len;
+  ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.stroke();
+  ctx.beginPath();
+  ctx.moveTo(x2, y2);
+  ctx.lineTo(x2 - hLen * (ux + uy * 0.42), y2 - hLen * (uy - ux * 0.42));
+  ctx.lineTo(x2 - hLen * (ux - uy * 0.42), y2 - hLen * (uy + ux * 0.42));
+  ctx.closePath();
+  if (fillColor) { ctx.fillStyle = fillColor; ctx.fill(); }
+  else ctx.fill();
+}
+
+function drawLabel3D(wx, wy, wz, text, color, offsetX, offsetY) {
+  const p = project(wx, wy, wz);
+  ctx.save();
+  ctx.font = 'bold 12px Inter, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.strokeStyle = color + '90';
+  ctx.lineWidth = 1;
+  ctx.setLineDash([4, 4]);
+  ctx.beginPath();
+  ctx.moveTo(p.sx, p.sy);
+  ctx.lineTo(p.sx + offsetX, p.sy + offsetY);
+  ctx.stroke();
+  ctx.setLineDash([]);
+
+  const lw = ctx.measureText(text).width;
+  ctx.fillStyle = 'rgba(7, 14, 25, 0.88)';
+  ctx.beginPath();
+  ctx.roundRect(p.sx + offsetX - lw / 2 - 7, p.sy + offsetY - 11, lw + 14, 22, 6);
+  ctx.fill();
+  ctx.strokeStyle = color + '80';
+  ctx.lineWidth = 1;
+  ctx.stroke();
+
+  ctx.fillStyle = color;
+  ctx.fillText(text, p.sx + offsetX, p.sy + offsetY + 4);
+  ctx.restore();
+}
+
+// ── PEC Plate ──
+function drawPlate(alpha) {
+  if (alpha <= 0.01) return;
+  const hw = PW / 2, hd = PD / 2;
+  const top = [[-hw, 0, -hd], [hw, 0, -hd], [hw, 0, hd], [-hw, 0, hd]];
+  const bot = [[-hw, -PT, -hd], [hw, -PT, -hd], [hw, -PT, hd], [-hw, -PT, hd]];
+  const tp = top.map(c => project(...c));
+  const bp = bot.map(c => project(...c));
+
+  ctx.save();
+  ctx.globalAlpha = alpha;
+
+  // Bottom face
+  ctx.beginPath();
+  bp.forEach((p, i) => i ? ctx.lineTo(p.sx, p.sy) : ctx.moveTo(p.sx, p.sy));
+  ctx.closePath();
+  ctx.fillStyle = '#0a0801';
+  ctx.fill();
+
+  // Visible sides
+  const sideEdges = [[0, 3], [3, 2], [2, 1]];
+  const sideBrightness = [0.7, 0.8, 0.6];
+  sideEdges.forEach(([a, b], si) => {
+    ctx.beginPath();
+    ctx.moveTo(tp[a].sx, tp[a].sy); ctx.lineTo(tp[b].sx, tp[b].sy);
+    ctx.lineTo(bp[b].sx, bp[b].sy); ctx.lineTo(bp[a].sx, bp[a].sy);
+    ctx.closePath();
+    const br = sideBrightness[si];
+    ctx.fillStyle = `rgba(${Math.floor(65 * br)},${Math.floor(52 * br)},${Math.floor(15 * br)},0.92)`;
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(255,200,87,.25)';
+    ctx.lineWidth = 0.8;
+    ctx.stroke();
+  });
+
+  // Top surface
+  ctx.beginPath();
+  tp.forEach((p, i) => i ? ctx.lineTo(p.sx, p.sy) : ctx.moveTo(p.sx, p.sy));
+  ctx.closePath();
+  const tg = ctx.createLinearGradient(tp[0].sx, tp[0].sy, tp[2].sx, tp[2].sy);
+  tg.addColorStop(0,   'rgba(58,48,16,0.95)');
+  tg.addColorStop(0.45,'rgba(85,70,24,0.92)');
+  tg.addColorStop(1,   'rgba(48,38,12,0.95)');
+  ctx.fillStyle = tg;
+  ctx.fill();
+
+  // Grid
+  ctx.strokeStyle = 'rgba(255,200,87,.14)';
+  ctx.lineWidth = 0.5;
+  for (let i = 1; i < 8; i++) {
+    const x0 = -hw + i * PW / 8;
+    const a = project(x0, 0, -hd), b = project(x0, 0, hd);
+    ctx.beginPath(); ctx.moveTo(a.sx, a.sy); ctx.lineTo(b.sx, b.sy); ctx.stroke();
+  }
+  for (let j = 1; j < 5; j++) {
+    const z0 = -hd + j * PD / 5;
+    const a = project(-hw, 0, z0), b = project(hw, 0, z0);
+    ctx.beginPath(); ctx.moveTo(a.sx, a.sy); ctx.lineTo(b.sx, b.sy); ctx.stroke();
+  }
+
+  // Edge glow
+  ctx.beginPath();
+  tp.forEach((p, i) => i ? ctx.lineTo(p.sx, p.sy) : ctx.moveTo(p.sx, p.sy));
+  ctx.closePath();
+  ctx.strokeStyle = '#ffc857';
+  ctx.lineWidth = 1.8;
+  ctx.shadowColor = '#ffc857';
+  ctx.shadowBlur = 8;
+  ctx.stroke();
+  ctx.shadowBlur = 0;
+
+  // PEC tag
+  const pctr = project(0, -PT * 0.5, 0);
+  ctx.font = 'bold 10px Inter, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillStyle = 'rgba(255,200,87,.55)';
+  ctx.fillText('PEC — σ → ∞', pctr.sx, pctr.sy + 4);
+
+  ctx.restore();
+}
+
+// ── Wave Drawing ──
+function drawWave(startPt, dir, eDirV, hDirV, length, simT,
+                  eColor, hColor, alpha, ampE = AMP_E, ampH = AMP_H) {
+  if (alpha < 0.01) return;
+  const N = 85;
+  const spP = [], eP = [], hP = [];
+
+  for (let i = 0; i <= N; i++) {
+    const s     = (i / N) * length;
+    const phase = K_WAVE * s - W_FREQ * simT;
+    const sp    = add3(startPt, scale3(dir, s));
+    const ev    = ampE * Math.sin(phase);
+    const hv    = ampH * Math.sin(phase);
+    spP.push(project(...sp));
+    eP.push(project(...add3(sp, scale3(eDirV, ev))));
+    hP.push(project(...add3(sp, scale3(hDirV, hv))));
+  }
+
+  ctx.save();
+  ctx.globalAlpha = alpha;
+
+  // H-field sinusoid & fins
+  ctx.strokeStyle = hColor + 'a0';
+  ctx.lineWidth   = 0.9;
+  for (let i = 0; i <= N; i += 2) {
+    ctx.beginPath(); ctx.moveTo(spP[i].sx, spP[i].sy); ctx.lineTo(hP[i].sx, hP[i].sy); ctx.stroke();
+  }
+  ctx.beginPath();
+  ctx.moveTo(hP[0].sx, hP[0].sy);
+  for (let i = 1; i <= N; i++) ctx.lineTo(hP[i].sx, hP[i].sy);
+  ctx.strokeStyle = hColor;
+  ctx.lineWidth   = 2.2;
+  ctx.shadowColor = hColor;
+  ctx.shadowBlur  = 10;
+  ctx.stroke();
+
+  // E-field sinusoid & fins
+  ctx.shadowBlur = 0;
+  ctx.strokeStyle = eColor + 'a0';
+  ctx.lineWidth   = 0.9;
+  for (let i = 0; i <= N; i += 2) {
+    ctx.beginPath(); ctx.moveTo(spP[i].sx, spP[i].sy); ctx.lineTo(eP[i].sx, eP[i].sy); ctx.stroke();
+  }
+  ctx.beginPath();
+  ctx.moveTo(eP[0].sx, eP[0].sy);
+  for (let i = 1; i <= N; i++) ctx.lineTo(eP[i].sx, eP[i].sy);
+  ctx.strokeStyle = eColor;
+  ctx.lineWidth   = 2.8;
+  ctx.shadowColor = eColor;
+  ctx.shadowBlur  = 14;
+  ctx.stroke();
+
+  // Spine
+  ctx.shadowBlur = 0;
+  ctx.strokeStyle = 'rgba(255,255,255,.2)';
+  ctx.lineWidth   = 1;
+  ctx.setLineDash([5, 5]);
+  ctx.beginPath();
+  ctx.moveTo(spP[0].sx, spP[0].sy);
+  for (let i = 1; i <= N; i++) ctx.lineTo(spP[i].sx, spP[i].sy);
+  ctx.stroke();
+  ctx.setLineDash([]);
+
+  // Propagation arrow
+  const mid  = Math.floor(N * 0.7);
+  const mid2 = Math.floor(N * 0.75);
+  ctx.strokeStyle = '#ffffff';
+  ctx.fillStyle   = '#ffffff';
+  ctx.lineWidth   = 2;
+  ctx.shadowBlur  = 6;
+  ctx.shadowColor = '#ffffff';
+  drawArrow2D(spP[mid].sx, spP[mid].sy, spP[mid2].sx, spP[mid2].sy, 9, '#ffffff');
+
+  ctx.restore();
+}
+
+// ── Surface Currents Jₛ ──
+function drawCurrents(alpha) {
+  if (alpha < 0.01) return;
+  const ROWS = 4, COLS = 7;
+  const hw = PW / 2, hd = PD / 2;
+
+  ctx.save();
+  ctx.globalAlpha = alpha;
+
+  for (let r = 0; r < ROWS; r++) {
+    for (let c = 0; c < COLS; c++) {
+      const px = -hw + (c + 0.5) * PW / COLS;
+      const pz = -hd + (r + 0.5) * PD / ROWS;
+
+      const delay  = (px * kInc[0] + pz * kInc[2]) * K_WAVE;
+      const jAmp   = Math.sin(-W_FREQ * t - delay);
+      const jLen   = jAmp * 38;
+
+      const jx = jLen * eInc[0];
+      const jz = jLen * eInc[2];
+
+      const base = project(px,      1.5, pz);
+      const tip  = project(px + jx, 1.5, pz + jz);
+
+      const inten = Math.abs(jAmp);
+      const col   = `rgba(255,${Math.floor(90 + 55 * inten)},${Math.floor(40 + 25 * inten)},${0.7 + 0.3 * inten})`;
+      ctx.strokeStyle = col;
+      ctx.fillStyle   = col;
+      ctx.lineWidth   = 2;
+      ctx.shadowColor = '#ff6b35';
+      ctx.shadowBlur  = 5 + inten * 6;
+
+      drawArrow2D(base.sx, base.sy, tip.sx, tip.sy, 8, col);
+
+      if (inten > 0.3) {
+        ctx.beginPath(); ctx.arc(base.sx, base.sy, 2.2, 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(57,255,143,${inten * 0.8})`;
+        ctx.shadowColor = '#39ff8f'; ctx.shadowBlur = 4; ctx.fill();
+      }
+    }
+  }
+  ctx.restore();
+}
+
+// ── Standing Wave Envelope in Phase 4 ──
+function drawStandingWavePattern(alpha) {
+  if (alpha < 0.05) return;
+  ctx.save();
+  ctx.globalAlpha = alpha * 0.75;
+
+  // Draw stationary nodal lines above plate
+  const numNodes = 3;
+  const lambdaHalfY = 65; // nodal height separation
+
+  for (let n = 1; n <= numNodes; n++) {
+    const ny = n * lambdaHalfY;
+    const p1 = project(-PW * 0.45, ny, 0);
+    const p2 = project(PW * 0.45, ny, 0);
+
+    ctx.strokeStyle = 'rgba(255, 200, 87, 0.45)';
+    ctx.setLineDash([6, 6]);
+    ctx.lineWidth = 1.4;
+    ctx.beginPath();
+    ctx.moveTo(p1.sx, p1.sy); ctx.lineTo(p2.sx, p2.sy);
+    ctx.stroke();
+    ctx.setLineDash([]);
+
+    // Standing wave oscillation envelope
+    const envPts = 30;
+    ctx.beginPath();
+    for (let ep = 0; ep <= envPts; ep++) {
+      const ex = -PW * 0.45 + (ep / envPts) * PW * 0.9;
+      const osc = Math.sin(ep * 0.4 - t * 3.2) * Math.sin(n * Math.PI) * 15;
+      const pt = project(ex, ny + osc, 0);
+      if (ep === 0) ctx.moveTo(pt.sx, pt.sy);
+      else ctx.lineTo(pt.sx, pt.sy);
+    }
+    ctx.strokeStyle = 'rgba(255, 200, 87, 0.6)';
+    ctx.lineWidth = 1.8;
+    ctx.stroke();
+  }
+
+  // Label
+  const lblPt = project(PW * 0.48, lambdaHalfY, 0);
+  ctx.font = 'bold 10px JetBrains Mono, monospace';
+  ctx.fillStyle = '#ffc857';
+  ctx.fillText('Nodal Plane (E_tot = 0)', lblPt.sx, lblPt.sy);
+
+  ctx.restore();
+}
+
+// ── Normal Vector ──
+function drawNormal(alpha) {
+  if (alpha < 0.01) return;
+  const bp = project(0, 0, 0);
+  const tp = project(0, 115, 0);
+
+  ctx.save();
+  ctx.globalAlpha = alpha * 0.6;
+  ctx.strokeStyle = '#ffc857';
+  ctx.fillStyle   = '#ffc857';
+  ctx.lineWidth   = 1.5;
+  ctx.setLineDash([5, 4]);
+  drawArrow2D(bp.sx, bp.sy, tp.sx, tp.sy, 9, '#ffc857');
+  ctx.setLineDash([]);
+  ctx.font = 'bold 12px Inter, sans-serif';
+  ctx.textAlign = 'left';
+  ctx.fillText('n̂', tp.sx + 8, tp.sy + 4);
+  ctx.restore();
+}
+
+// ── Coordinate Axes Indicator ──
+function drawAxes() {
+  const origin = [115, -75, -45];
+  const axes = [
+    { dir: [70, 0, 0], color: '#ff6b6b', label: 'X' },
+    { dir: [0, 55, 0], color: '#39ff8f', label: 'Y' },
+    { dir: [0, 0, 55], color: '#5c9eff', label: 'Z' },
+  ];
+  const op = project(...origin);
+  ctx.save();
+  ctx.globalAlpha = 0.65;
+  axes.forEach(ax => {
+    const ep = project(...add3(origin, ax.dir));
+    ctx.strokeStyle = ax.color; ctx.fillStyle = ax.color;
+    ctx.lineWidth = 1.6;
+    drawArrow2D(op.sx, op.sy, ep.sx, ep.sy, 6, ax.color);
+    ctx.font = 'bold 10px Inter, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText(ax.label, ep.sx + (ep.sx - op.sx) * 0.18, ep.sy + (ep.sy - op.sy) * 0.18);
+  });
+  ctx.restore();
+}
+
+// ── Starfield & Background ──
+const STARS = Array.from({ length: 110 }, () => ({
+  x: Math.random(), y: Math.random(),
+  r: Math.random() * 1.2 + 0.3,
+  a: Math.random() * 0.45 + 0.15,
+}));
+
+function drawBackground() {
+  const grad = ctx.createRadialGradient(cssW * 0.48, cssH * 0.52, 0, cssW * 0.48, cssH * 0.52, Math.hypot(cssW, cssH) * 0.7);
+  grad.addColorStop(0,   '#0b1626');
+  grad.addColorStop(0.5, '#07101b');
+  grad.addColorStop(1,   '#04080f');
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, 0, cssW, cssH);
+
+  // Stars
+  STARS.forEach(s => {
+    ctx.fillStyle = `rgba(200,225,255,${s.a})`;
+    ctx.beginPath();
+    ctx.arc(s.x * cssW, s.y * cssH, s.r, 0, Math.PI * 2);
+    ctx.fill();
+  });
+}
+
+// ── Canvas In-Scene Labels ──
+function drawCanvasLabels(ph) {
+  const p = PHASES[ph];
+  if (p.showLabel === 'inc' || p.showLabel === 'all') {
+    const et = add3(add3(WAVE_START, scale3(kInc, 150)), scale3(eInc, AMP_E));
+    drawLabel3D(...et, 'Eᵢ (Electric)', '#00c8ff', -36, -22);
+    const ht = add3(add3(WAVE_START, scale3(kInc, 220)), scale3(hInc, AMP_H));
+    drawLabel3D(...ht, 'Hᵢ (Magnetic)', '#39ff8f', 34, -18);
+  }
+  if (p.showLabel === 'cur' || p.showLabel === 'all') {
+    drawLabel3D(0, 2, 60, 'Jₛ = n̂ × H_total', '#ff6b35', 75, 26);
+  }
+  if (p.showLabel === 'scat' || p.showLabel === 'all') {
+    const se = add3(add3(SCAT_START, scale3(kScat, 260)), scale3(eScat, AMP_E));
+    drawLabel3D(...se, 'Eₛ (Scattered)', '#ff6b6b', 30, -22);
+  }
+}
+
+// ════════════════════════════════════════════════════
+//   STORY UI & KATEX RENDERING
+// ════════════════════════════════════════════════════
+const storyPhaseEl = document.getElementById('story-phase');
+const storyTitleEl = document.getElementById('story-title');
+const storyBodyEl  = document.getElementById('story-body');
+const storyEqEl    = document.getElementById('story-eq');
+const progFill     = document.getElementById('prog-fill');
+const stepDots     = document.querySelectorAll('.step-dot');
+
+function updateStoryUI(idx, progress) {
+  const p = PHASES[idx];
+  storyPhaseEl.textContent  = p.label;
+  storyPhaseEl.style.color  = p.color;
+  storyTitleEl.textContent  = p.title;
+  storyBodyEl.innerHTML     = p.body;
+
+  try {
+    storyEqEl.innerHTML = katex.renderToString(p.eq, {
+      displayMode: true, throwOnError: false, output: 'html'
+    });
+  } catch(e) {
+    storyEqEl.textContent = p.eq;
+  }
+  progFill.style.width      = (progress * 100).toFixed(1) + '%';
+  progFill.style.background = `linear-gradient(90deg, ${p.color}, #7c5cfc)`;
+
+  stepDots.forEach((d, i) => {
+    d.className = 'step-dot' + (i === idx ? ` active-${i}` : '');
+  });
+}
+
+function nextPhase() {
+  phaseIdx = (phaseIdx + 1) % PHASES.length;
+  phaseTime = 0;
+  updateStoryUI(phaseIdx, 0);
+}
+function prevPhase() {
+  phaseIdx = (phaseIdx - 1 + PHASES.length) % PHASES.length;
+  phaseTime = 0;
+  updateStoryUI(phaseIdx, 0);
+}
+function jumpTo(idx) {
+  phaseIdx = idx;
+  phaseTime = 0;
+  updateStoryUI(phaseIdx, 0);
+}
+function toggleAutoCycle() {
+  autoCycle = !autoCycle;
+  document.getElementById('autoBtn').textContent = autoCycle ? '⏸ Auto-Cycle: ON' : '▶ Auto-Cycle: OFF';
+  document.getElementById('autoBtn').style.color = autoCycle ? '#39ff8f' : '#ffc857';
+}
+
+// ════════════════════════════════════════════════════
+//   MAIN LOOP
+// ════════════════════════════════════════════════════
+let targetInc = 1, targetCur = 0, targetScat = 0;
+function blendAlpha(cur, tgt, dt) { return cur + (tgt - cur) * Math.min(1, 2.0 * dt); }
+
+let lastTs = null;
+function animate(ts) {
+  if (lastTs === null) lastTs = ts;
+  const dt = Math.min((ts - lastTs) / 1000, 0.05) * SIM_SPEED;
+  lastTs = ts;
+
+  if (playing) {
+    t += dt;
+    if (autoCycle) {
+      phaseTime += dt;
+      if (phaseTime >= PHASE_DUR) {
+        phaseTime = 0;
+        phaseIdx = (phaseIdx + 1) % PHASES.length;
+      }
+    }
+  }
+
+  const ph = PHASES[phaseIdx];
+  targetInc  = ph.showInc  ? 1 : 0.08;
+  targetCur  = ph.showCur  ? 1 : 0;
+  targetScat = ph.showScat ? 1 : 0;
+
+  incAlpha  = blendAlpha(incAlpha,  targetInc,  dt);
+  curAlpha  = blendAlpha(curAlpha,  targetCur,  dt);
+  scatAlpha = blendAlpha(scatAlpha, targetScat, dt);
+
+  updateStoryUI(phaseIdx, autoCycle ? Math.min(1, phaseTime / PHASE_DUR) : 1);
+
+  // Retina Scaling
+  const dpr = window.devicePixelRatio || 1;
+  ctx.save();
+  ctx.scale(dpr, dpr);
+
+  drawBackground();
+
+  // Incident Wave
+  drawWave(WAVE_START, kInc, eInc, hInc, WAVE_LEN, t, '#00c8ff', '#39ff8f', incAlpha);
+
+  // Conductor Plate
+  drawPlate(1);
+
+  // Surface Normal
+  drawNormal(curAlpha * 0.85);
+
+  // Induced Surface Currents
+  drawCurrents(curAlpha);
+
+  // Scattered Wave
+  drawWave(SCAT_START, kScat, eScat, hScat, SCAT_LEN, t, '#ff6b6b', '#ffa94d', scatAlpha);
+
+  // Phase 4 Standing Wave Nodes
+  if (phaseIdx === 3) {
+    drawStandingWavePattern(scatAlpha);
+  }
+
+  // Axes
+  drawAxes();
+
+  // Canvas Labels
+  drawCanvasLabels(phaseIdx);
+
+  ctx.restore();
+  requestAnimationFrame(animate);
+}
+
+// Initial update & kickoff
+updateStoryUI(0, 0);
+requestAnimationFrame(animate);
+
+// ── Bottom Toolbar Controls ──
+function togglePlay() {
+  playing = !playing;
+  document.getElementById('playBtn').textContent = playing ? '⏸ Pause' : '▶ Play';
+}
+function restartCycle() {
+  phaseIdx = 0; phaseTime = 0; t = 0; lastTs = null;
+  playing = true;
+  document.getElementById('playBtn').textContent = '⏸ Pause';
+  updateStoryUI(0, 0);
+}
+
+// ── Global Keyboard Shortcuts ──
+window.addEventListener('keydown', e => {
+  if (e.target.tagName === 'INPUT') return;
+  if (e.code === 'Space') {
+    e.preventDefault(); togglePlay();
+  } else if (e.key === 'ArrowRight') {
+    nextPhase();
+  } else if (e.key === 'ArrowLeft') {
+    prevPhase();
+  } else if (e.key === '1') {
+    window.location.href = 'index.html';
+  } else if (e.key === 'r' || e.key === 'R') {
+    resetCamera();
+  }
+});
+</script>
+</body>
+</html>

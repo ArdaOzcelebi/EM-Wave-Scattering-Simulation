@@ -1,0 +1,1321 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>EM Wave Scattering & MoM Laboratory</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+  <!-- KaTeX -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"
+    onload="renderMathInElement(document.body, {
+      delimiters: [
+        {left:'$$', right:'$$', display:true},
+        {left:'$', right:'$', display:false}
+      ],
+      throwOnError: false
+    });"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:       #080c14;
+      --surface:  #0d1520;
+      --panel:    #111926;
+      --border:   #1e2d42;
+      --border-lit: #2f4565;
+      --accent:   #00c8ff;
+      --accent2:  #7c5cfc;
+      --scatter:  #ff6b6b;
+      --current:  #39ff8f;
+      --gold:     #ffc857;
+      --text:     #e2eaf5;
+      --muted:    #8295ac;
+    }
+
+    html, body {
+      height: 100%;
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Inter', sans-serif;
+      overflow-x: hidden;
+    }
+
+    /* ── Top Navigation Bar ── */
+    header {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      padding: 12px 24px;
+      border-bottom: 1px solid var(--border);
+      background: rgba(8, 12, 20, 0.88);
+      backdrop-filter: blur(14px);
+      position: relative;
+      z-index: 50;
+    }
+    header .logo {
+      width: 36px; height: 36px;
+      border-radius: 10px;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      display: flex; align-items: center; justify-content: center;
+      font-size: 18px; flex-shrink: 0;
+      box-shadow: 0 0 15px rgba(0, 200, 255, 0.35);
+    }
+    header .brand h1 { font-size: 1rem; font-weight: 700; letter-spacing: .02em; color: #fff; }
+    header .brand p  { font-size: .72rem; color: var(--muted); }
+
+    .nav-tabs {
+      display: flex; gap: 8px; align-items: center; margin-left: 20px;
+    }
+    .nav-link {
+      display: flex; align-items: center; gap: 6px;
+      text-decoration: none; color: var(--muted);
+      font-size: .75rem; font-weight: 600;
+      padding: 6px 14px; border-radius: 20px;
+      border: 1px solid transparent;
+      transition: all .2s;
+    }
+    .nav-link:hover { color: var(--text); border-color: var(--border-lit); background: rgba(255,255,255,.03); }
+    .nav-link.active {
+      color: var(--accent);
+      border-color: rgba(0,200,255,.35);
+      background: rgba(0,200,255,.08);
+      box-shadow: 0 0 10px rgba(0,200,255,.15);
+    }
+
+    .header-actions {
+      display: flex; align-items: center; gap: 10px; margin-left: auto;
+    }
+    .icon-btn {
+      display: flex; align-items: center; gap: 5px;
+      background: rgba(255,255,255,.04);
+      border: 1px solid var(--border);
+      color: var(--muted);
+      padding: 5px 11px; border-radius: 8px;
+      font-size: .73rem; font-weight: 600;
+      cursor: pointer; transition: all .2s;
+      font-family: inherit;
+    }
+    .icon-btn:hover { color: var(--text); border-color: var(--accent); background: rgba(0,200,255,.05); }
+
+    .badge-open {
+      background: rgba(57,255,143,.1);
+      border: 1px solid rgba(57,255,143,.3);
+      color: var(--current);
+      font-size: .68rem; font-weight: 700;
+      padding: 4px 10px; border-radius: 20px; letter-spacing: .05em;
+    }
+
+    /* ── Layout ── */
+    .layout {
+      display: grid;
+      grid-template-columns: 1fr 380px;
+      height: calc(100vh - 61px);
+    }
+
+    /* ── Canvas Section ── */
+    .sim-section {
+      display: flex;
+      flex-direction: column;
+      border-right: 1px solid var(--border);
+      overflow: hidden;
+      position: relative;
+    }
+    .toolbar {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 18px;
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      flex-shrink: 0;
+      flex-wrap: wrap;
+    }
+    .toolbar label {
+      display: flex; align-items: center; gap: 6px;
+      font-size: .72rem; color: var(--muted); white-space: nowrap;
+    }
+    .toolbar input[type=range] {
+      -webkit-appearance: none;
+      height: 4px; border-radius: 4px;
+      background: var(--border-lit);
+      cursor: pointer; width: 80px;
+    }
+    .toolbar input[type=range]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 14px; height: 14px; border-radius: 50%;
+      background: var(--accent); cursor: pointer;
+      box-shadow: 0 0 8px var(--accent);
+    }
+    .btn {
+      display: flex; align-items: center; gap: 6px;
+      padding: 6px 13px; border-radius: 8px; border: none;
+      font-family: 'Inter', sans-serif; font-size: .75rem; font-weight: 600;
+      cursor: pointer; transition: all .2s;
+    }
+    .btn-primary {
+      background: linear-gradient(135deg, var(--accent), #0099ff);
+      color: #04080f; font-weight: 700;
+      box-shadow: 0 0 12px rgba(0,200,255,.3);
+    }
+    .btn-primary:hover { filter: brightness(1.15); box-shadow: 0 0 16px rgba(0,200,255,.5); }
+    .btn-ghost {
+      background: transparent;
+      border: 1px solid var(--border);
+      color: var(--text);
+    }
+    .btn-ghost:hover { border-color: var(--accent); color: var(--accent); }
+    .btn-ghost.active {
+      border-color: var(--accent); color: var(--accent);
+      background: rgba(0,200,255,.09);
+      box-shadow: inset 0 0 8px rgba(0,200,255,.15);
+    }
+
+    .tsep { width: 1px; height: 22px; background: var(--border); margin: 0 2px; }
+
+    canvas#sim {
+      flex: 1; display: block; width: 100%; height: 100%; cursor: crosshair;
+    }
+
+    /* ── Legend strip ── */
+    .legend {
+      display: flex; gap: 16px; align-items: center;
+      padding: 8px 18px;
+      background: var(--surface);
+      border-top: 1px solid var(--border);
+      flex-shrink: 0;
+      flex-wrap: wrap;
+    }
+    .leg-item { display: flex; align-items: center; gap: 6px; font-size: .71rem; color: var(--muted); }
+    .leg-dot  { width: 9px; height: 9px; border-radius: 50%; }
+
+    /* ── Right Panel ── */
+    .right-panel {
+      display: flex;
+      flex-direction: column;
+      background: var(--panel);
+      overflow-y: auto;
+    }
+    .tabs {
+      display: flex;
+      border-bottom: 1px solid var(--border);
+      background: var(--surface);
+      flex-shrink: 0;
+    }
+    .tab {
+      flex: 1; padding: 12px 6px; text-align: center;
+      font-size: .74rem; font-weight: 600; letter-spacing: .03em;
+      color: var(--muted); cursor: pointer;
+      border-bottom: 2px solid transparent;
+      transition: all .2s;
+    }
+    .tab:hover { color: var(--text); }
+    .tab.active { color: var(--accent); border-bottom-color: var(--accent); background: rgba(0,200,255,.04); }
+
+    .tab-content { display: none; padding: 18px; }
+    .tab-content.active { display: block; }
+
+    /* step cards */
+    .step-card {
+      border-radius: 12px;
+      border: 1px solid var(--border);
+      background: rgba(13, 21, 32, 0.6);
+      margin-bottom: 12px;
+      overflow: hidden;
+      transition: all .2s;
+    }
+    .step-card:hover { border-color: rgba(0,200,255,.3); }
+    .step-card .card-head {
+      display: flex; align-items: center; gap: 10px;
+      padding: 12px 14px; cursor: pointer; user-select: none;
+    }
+    .step-card .card-head .num {
+      width: 26px; height: 26px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: .72rem; font-weight: 700; flex-shrink: 0;
+    }
+    .step-card .card-head .title { font-size: .82rem; font-weight: 600; color: var(--text); }
+    .step-card .card-head .arrow { margin-left: auto; font-size: .7rem; color: var(--muted); transition: transform .2s; }
+    .step-card.open .arrow { transform: rotate(90deg); }
+    .step-card .card-body { display: none; padding: 0 14px 14px; }
+    .step-card.open .card-body { display: block; }
+    .step-card .card-body p { font-size: .77rem; line-height: 1.65; color: #a8bcd4; margin-bottom: 8px; }
+
+    .step-card .card-body .eq {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 12px 14px;
+      margin: 8px 0;
+      overflow-x: auto;
+      text-align: center;
+    }
+    /* KaTeX override */
+    .eq .katex,
+    .eq .katex *,
+    .eq .katex-display,
+    .eq .katex-display * { color: var(--gold) !important; }
+    .eq .katex-display { margin: 0; }
+    .eq .katex { font-size: .9rem !important; }
+
+    .step-card .card-body .highlight {
+      background: rgba(0,200,255,.07);
+      border-left: 3px solid var(--accent);
+      border-radius: 0 6px 6px 0;
+      padding: 8px 12px;
+      font-size: .73rem; color: #c5ddf0;
+      margin: 8px 0; line-height: 1.6;
+    }
+
+    /* ── Interactive MoM Matrix Solver Box ── */
+    .matrix-demo {
+      background: var(--surface);
+      border: 1px solid var(--border-lit);
+      border-radius: 10px;
+      padding: 14px;
+      margin: 10px 0;
+    }
+    .matrix-demo h4 { font-size: .78rem; font-weight: 700; color: var(--accent); margin-bottom: 8px; }
+    .matrix-row {
+      display: flex; gap: 6px; align-items: center; margin-bottom: 6px;
+      font-family: 'JetBrains Mono', monospace; font-size: .75rem;
+    }
+    .matrix-cell {
+      min-width: 58px; height: 32px;
+      border-radius: 6px;
+      display: flex; align-items: center; justify-content: center;
+      font-weight: 600; padding: 0 6px;
+      transition: all .2s;
+    }
+    .mc-z  { background: rgba(124,92,252,.18); color: #b8a4ff; border: 1px solid rgba(124,92,252,.3); }
+    .mc-i  { background: rgba(57,255,143,.14); color: var(--current); border: 1px solid rgba(57,255,143,.3); }
+    .mc-v  { background: rgba(255,200,87,.14); color: var(--gold); border: 1px solid rgba(255,200,87,.3); }
+    .mc-eq { color: var(--muted); font-size: .9rem; font-weight: 700; }
+
+    .solve-btn {
+      width: 100%; margin-top: 10px;
+      padding: 9px; border-radius: 8px; border: none;
+      background: linear-gradient(90deg, var(--accent2), var(--accent));
+      color: #fff; font-family: 'Inter', sans-serif;
+      font-size: .78rem; font-weight: 700; cursor: pointer;
+      box-shadow: 0 0 12px rgba(124,92,252,.3);
+      transition: all .2s;
+    }
+    .solve-btn:hover { filter: brightness(1.15); box-shadow: 0 0 16px rgba(0,200,255,.4); }
+
+    .solve-result {
+      margin-top: 10px; padding: 10px;
+      border-radius: 8px;
+      background: rgba(57,255,143,.06);
+      border: 1px solid rgba(57,255,143,.25);
+      font-family: 'JetBrains Mono', monospace;
+      font-size: .72rem; color: #d4f8e2; line-height: 1.6;
+      display: block;
+    }
+
+    /* param sliders */
+    .param-group { margin-bottom: 14px; }
+    .param-group label {
+      display: flex; justify-content: space-between;
+      font-size: .74rem; color: var(--muted); margin-bottom: 6px; font-weight: 500;
+    }
+    .param-group label span { color: var(--accent); font-weight: 700; }
+    .param-group input[type=range] {
+      width: 100%; -webkit-appearance: none;
+      height: 5px; border-radius: 5px; background: var(--border-lit); cursor: pointer;
+    }
+    .param-group input[type=range]::-webkit-slider-thumb {
+      -webkit-appearance: none; width: 16px; height: 16px;
+      border-radius: 50%; background: var(--accent); cursor: pointer;
+      box-shadow: 0 0 8px var(--accent);
+    }
+    .divider { height: 1px; background: var(--border); margin: 16px 0; }
+    .info-box {
+      border-radius: 10px; padding: 12px 14px;
+      font-size: .74rem; line-height: 1.6; color: #a8bcd4;
+      margin-bottom: 10px;
+    }
+    .info-box.blue   { background: rgba(0,200,255,.06); border: 1px solid rgba(0,200,255,.2); }
+    .info-box.purple { background: rgba(124,92,252,.07); border: 1px solid rgba(124,92,252,.22); }
+    .info-box.gold   { background: rgba(255,200,87,.07); border: 1px solid rgba(255,200,87,.22); }
+
+    /* ── Modal Dialogs ── */
+    .modal-overlay {
+      position: fixed; inset: 0; background: rgba(4,8,15,.82);
+      backdrop-filter: blur(8px); z-index: 100;
+      display: none; align-items: center; justify-content: center;
+      padding: 20px;
+    }
+    .modal-overlay.open { display: flex; }
+    .modal-card {
+      background: var(--panel); border: 1px solid var(--border-lit);
+      border-radius: 16px; width: 620px; max-width: 95vw;
+      max-height: 85vh; overflow-y: auto; padding: 24px 28px;
+      box-shadow: 0 20px 50px rgba(0,0,0,.6);
+      position: relative;
+    }
+    .modal-close {
+      position: absolute; top: 16px; right: 18px;
+      background: transparent; border: none; color: var(--muted);
+      font-size: 1.2rem; cursor: pointer; transition: color .2s;
+    }
+    .modal-close:hover { color: #fff; }
+    .modal-card h2 { font-size: 1.15rem; font-weight: 700; color: #fff; margin-bottom: 12px; }
+    .modal-card p { font-size: .8rem; color: #a8bcd4; line-height: 1.65; margin-bottom: 12px; }
+
+    /* table */
+    .shortcut-table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: .78rem; }
+    .shortcut-table th, .shortcut-table td {
+      padding: 9px 12px; border-bottom: 1px solid var(--border); text-align: left;
+    }
+    .shortcut-table th { color: var(--muted); font-size: .72rem; text-transform: uppercase; letter-spacing: .05em; }
+    .shortcut-table kbd {
+      background: var(--surface); border: 1px solid var(--border-lit);
+      padding: 2px 7px; border-radius: 5px; font-family: 'JetBrains Mono', monospace;
+      color: var(--accent); font-size: .75rem;
+    }
+
+    /* scrollbars */
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: var(--border-lit); border-radius: 3px; }
+
+    @media (max-width: 920px) {
+      .layout { grid-template-columns: 1fr; grid-template-rows: 55vh 1fr; }
+      .sim-section { border-right: none; border-bottom: 1px solid var(--border); }
+      .nav-tabs { display: none; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ── HEADER ── -->
+<header>
+  <div class="logo">⚡</div>
+  <div class="brand">
+    <h1>EM Wave Scattering & MoM Lab</h1>
+    <p>Maxwell Equations · Surface Currents · Free-Space Green's Function · Method of Moments</p>
+  </div>
+
+  <nav class="nav-tabs">
+    <a href="index.html" class="nav-link active">🔬 2D Field Lab</a>
+    <a href="simulation2.html" class="nav-link">🌐 3D Wave Story →</a>
+  </nav>
+
+  <div class="header-actions">
+    <button class="icon-btn" onclick="openModal('modal-theory')">📖 Theory</button>
+    <button class="icon-btn" onclick="openModal('modal-shortcuts')">⌨️ Shortcuts</button>
+    <span class="badge-open">OPEN SOURCE</span>
+  </div>
+</header>
+
+<!-- ── MAIN LAYOUT ── -->
+<div class="layout">
+
+  <!-- ══════════ LEFT — CANVAS SIMULATION ══════════ -->
+  <div class="sim-section">
+    <div class="toolbar">
+      <button class="btn btn-primary" id="playBtn" onclick="togglePlay()">⏸ Pause</button>
+      <button class="btn btn-ghost" id="resetBtn" onclick="resetSim()">↺ Reset</button>
+      
+      <div class="tsep"></div>
+      
+      <label>Speed
+        <input type="range" id="speedSlider" min="0.2" max="3" step="0.1" value="1" oninput="simSpeed=+this.value">
+      </label>
+      <label>Frequency
+        <input type="range" id="freqSlider" min="1" max="5" step="0.5" value="2.5" oninput="setFreq(+this.value)">
+      </label>
+      <label>Angle
+        <input type="range" id="angleSlider" min="0" max="70" step="5" value="30" oninput="setAngle(+this.value)">
+      </label>
+
+      <div class="tsep"></div>
+
+      <button class="btn btn-ghost active" id="polBtn" onclick="togglePolarization()">Polarization: TM</button>
+      <button class="btn btn-ghost active" id="showCurrBtn" onclick="toggleCurrents()">🌊 Jₛ Currents</button>
+      <button class="btn btn-ghost active" id="showScatBtn" onclick="toggleScatter()">📡 Scatter</button>
+      <button class="btn btn-ghost active" id="probeBtn" onclick="toggleProbe()">🎯 Field Probe</button>
+    </div>
+
+    <canvas id="sim"></canvas>
+
+    <div class="legend">
+      <div class="leg-item"><div class="leg-dot" style="background:#00c8ff"></div> Incident E-field</div>
+      <div class="leg-item"><div class="leg-dot" style="background:#7c5cfc"></div> Incident H-field</div>
+      <div class="leg-item"><div class="leg-dot" style="background:#39ff8f"></div> Surface Current Jₛ</div>
+      <div class="leg-item"><div class="leg-dot" style="background:#ff6b6b"></div> Scattered Field Eₛ</div>
+      <div class="leg-item"><div class="leg-dot" style="background:#ffc857"></div> Conductor (PEC / Real)</div>
+      <div class="leg-item" style="margin-left:auto;color:#7c94b2;font-size:.68rem">💡 Hover cursor anywhere over canvas to probe instantaneous fields</div>
+    </div>
+  </div>
+
+  <!-- ══════════ RIGHT — SCIENTIFIC PANEL ══════════ -->
+  <div class="right-panel">
+    <div class="tabs">
+      <div class="tab active" onclick="switchTab('physics')">Physics</div>
+      <div class="tab" onclick="switchTab('mom')">MoM Steps</div>
+      <div class="tab" onclick="switchTab('params')">Parameters</div>
+    </div>
+
+    <!-- ── PHYSICS TAB ── -->
+    <div class="tab-content active" id="tab-physics">
+
+      <div class="step-card open" id="card-inc">
+        <div class="card-head" onclick="toggleCard('card-inc')">
+          <div class="num" style="background:rgba(0,200,255,.15);color:var(--accent)">1</div>
+          <div class="title">Incident Field (Eᵢ, Hᵢ)</div>
+          <span class="arrow">▶</span>
+        </div>
+        <div class="card-body">
+          <p>A plane EM wave propagates through free space toward the conducting surface. Electric and magnetic fields are mutually orthogonal and transverse to the wavevector $\mathbf{k}$:</p>
+          <div class="eq">$$\vec{E}_i = E_0 \cos(\mathbf{k}\cdot\mathbf{r} - \omega t)\,\hat{e}$$
+          $$\vec{H}_i = \frac{E_0}{\eta}\cos(\mathbf{k}\cdot\mathbf{r} - \omega t)\,(\hat{k} \times \hat{e})$$</div>
+          <div class="highlight">$\eta = \sqrt{\mu_0/\varepsilon_0} \approx 376.73\,\Omega$ is the characteristic wave impedance of free space. The ratio $|\vec{E}|/|\vec{H}|$ is strictly locked to $\eta$.</div>
+        </div>
+      </div>
+
+      <div class="step-card open" id="card-cur">
+        <div class="card-head" onclick="toggleCard('card-cur')">
+          <div class="num" style="background:rgba(57,255,143,.12);color:var(--current)">2</div>
+          <div class="title">Induced Surface Current Jₛ</div>
+          <span class="arrow">▶</span>
+        </div>
+        <div class="card-body">
+          <p>The Lorentz force $\vec{F} = q(\vec{E} + \vec{v}\times\vec{B})$ accelerates free conduction electrons. Applying Ampère's law across the boundary collapses the volume current into a surface current sheet:</p>
+          <div class="eq">$$\hat{n} \times (\vec{H}_1 - \vec{H}_2) = \vec{J}_s$$</div>
+          <p>For an ideal <strong>Perfect Electric Conductor (PEC)</strong>, fields inside vanish identically ($\vec{H}_2 = 0$), yielding:</p>
+          <div class="eq">$$\vec{J}_s = \hat{n} \times \vec{H}_{\text{total}}$$</div>
+          <div class="highlight">Current flows strictly perpendicular to both the surface normal $\hat{n}$ and the magnetic field $\vec{H}$. The cross-product naturally enforces this geometric orthogonality.</div>
+          <p>For real conductors with finite conductivity $\sigma$, fields penetrate to a finite skin depth:</p>
+          <div class="eq">$$\delta = \sqrt{\dfrac{2}{\omega\mu\sigma}}$$</div>
+        </div>
+      </div>
+
+      <div class="step-card open" id="card-scat">
+        <div class="card-head" onclick="toggleCard('card-scat')">
+          <div class="num" style="background:rgba(255,107,107,.12);color:var(--scatter)">3</div>
+          <div class="title">Scattered Field (Eₛ, Hₛ)</div>
+          <span class="arrow">▶</span>
+        </div>
+        <div class="card-body">
+          <p>Each accelerating charge and current element acts as a miniature Hertzian dipole antenna radiating spherical wavelets into space:</p>
+          <div class="eq">$$\vec{E}_s(\mathbf{r}) = -j\omega\mu\iint_S G(\mathbf{r},\mathbf{r}')\,\vec{J}(\mathbf{r}')\,dS' - \nabla\!\left(\frac{1}{j\omega\varepsilon}\iint_S G\,\nabla'\!\cdot\vec{J}\,dS'\right)$$</div>
+          <p>Where $G(\mathbf{r},\mathbf{r}')$ is the fundamental free-space Green's function:</p>
+          <div class="eq">$$G(\mathbf{r},\mathbf{r}') = \frac{e^{-jk|\mathbf{r}-\mathbf{r}'|}}{4\pi|\mathbf{r}-\mathbf{r}'|}$$</div>
+          <div class="highlight">Total Field = $\vec{E}_i + \vec{E}_s$. On the PEC surface, the tangential component cancels to exactly zero: $\hat{n}\times(\vec{E}_i + \vec{E}_s) = 0$.</div>
+        </div>
+      </div>
+    </div><!-- /physics -->
+
+    <!-- ── MOM TAB ── -->
+    <div class="tab-content" id="tab-mom">
+
+      <div class="step-card open" id="card-bc">
+        <div class="card-head" onclick="toggleCard('card-bc')">
+          <div class="num" style="background:rgba(255,200,87,.12);color:var(--gold)">BC</div>
+          <div class="title">Step 1 — EFIE Boundary Condition</div>
+          <span class="arrow">▶</span>
+        </div>
+        <div class="card-body">
+          <p>On a PEC, tangential $\vec{E}$ must vanish. The scattered field generated by the surface current must cancel the incoming incident field at every point on $S$:</p>
+          <div class="eq">$$\hat{n}\times(\vec{E}_i + \vec{E}_s) = 0 \quad \Longrightarrow \quad \hat{n}\times\vec{E}_s = -\hat{n}\times\vec{E}_i$$</div>
+          <p>Substituting the Green's function integral for $\vec{E}_s$ turns this into the <strong>Electric Field Integral Equation (EFIE)</strong> with current $\vec{J}$ as the sole unknown.</p>
+        </div>
+      </div>
+
+      <div class="step-card open" id="card-basis">
+        <div class="card-head" onclick="toggleCard('card-basis')">
+          <div class="num" style="background:rgba(124,92,252,.15);color:var(--accent2)">B</div>
+          <div class="title">Step 2 — Discretization & RWG Basis</div>
+          <span class="arrow">▶</span>
+        </div>
+        <div class="card-body">
+          <p>The continuous unknown function $\vec{J}(\mathbf{r})$ is approximated as a finite sum of known basis functions (such as triangular RWG elements) with unknown complex weights $I_n$:</p>
+          <div class="eq">$$\vec{J}(\mathbf{r}) \approx \sum_{n=1}^{N} I_n\,\vec{f}_n(\mathbf{r})$$</div>
+          <div class="highlight">This transforms an infinite-dimensional calculus problem into finding $N$ numbers $I_1, I_2, \dots, I_N$.</div>
+        </div>
+      </div>
+
+      <div class="step-card open" id="card-test">
+        <div class="card-head" onclick="toggleCard('card-test')">
+          <div class="num" style="background:rgba(124,92,252,.15);color:var(--accent2)">T</div>
+          <div class="title">Step 3 — Galerkin Testing → Dense Matrix</div>
+          <span class="arrow">▶</span>
+        </div>
+        <div class="card-body">
+          <p>Testing against each basis function $\vec{f}_m$ converts the integral equation into the canonical linear system:</p>
+          <div class="eq">$$\mathbf{Z}\,\mathbf{I} = \mathbf{V} \quad \Longleftrightarrow \quad \sum_{n=1}^{N} Z_{mn}\,I_n = V_m$$</div>
+          <div class="eq">$$Z_{mn} = j\omega\mu\iint_S\!\iint_S \vec{f}_m(\mathbf{r})\cdot G(\mathbf{r},\mathbf{r}')\,\vec{f}_n(\mathbf{r}')\,dS'\,dS$$
+          $$V_m = \iint_S \vec{f}_m(\mathbf{r})\cdot\vec{E}_i(\mathbf{r})\,dS$$</div>
+        </div>
+      </div>
+
+      <div class="step-card open" id="card-matrix">
+        <div class="card-head" onclick="toggleCard('card-matrix')">
+          <div class="num" style="background:rgba(57,255,143,.1);color:var(--current)">▶</div>
+          <div class="title">Live Interactive 2-Patch MoM Solver</div>
+          <span class="arrow">▶</span>
+        </div>
+        <div class="card-body">
+          <p>Explore mutual electromagnetic coupling between two surface patches. Notice how changing the separation distance $d/\lambda$ modifies off-diagonal elements $Z_{12}$ and shifts the solved currents!</p>
+          
+          <div class="matrix-demo">
+            <h4>Impedance Matrix System [Z] · [I] = [V]</h4>
+            <div class="matrix-row">
+              <div class="matrix-cell mc-z" id="cell-z11">50.0</div>
+              <div class="matrix-cell mc-z" id="cell-z12">12.4</div>
+              <div class="mc-eq">·</div>
+              <div class="matrix-cell mc-i" id="cell-i1">I₁</div>
+              <div class="mc-eq">=</div>
+              <div class="matrix-cell mc-v" id="cell-v1">5.0 V</div>
+            </div>
+            <div class="matrix-row">
+              <div class="matrix-cell mc-z" id="cell-z21">12.4</div>
+              <div class="matrix-cell mc-z" id="cell-z22">50.0</div>
+              <div class="mc-eq">·</div>
+              <div class="matrix-cell mc-i" id="cell-i2">I₂</div>
+              <div class="mc-eq">=</div>
+              <div class="matrix-cell mc-v" id="cell-v2">3.0 V</div>
+            </div>
+
+            <div style="margin-top:12px">
+              <label style="display:flex;justify-content:space-between;font-size:.72rem;color:var(--muted);margin-bottom:3px">
+                Patch Distance $d/\lambda$: <span id="distVal" style="color:var(--accent);font-weight:700">0.25 λ</span>
+              </label>
+              <input type="range" id="distSlider" min="0.05" max="1.5" step="0.05" value="0.25" style="width:100%" oninput="updateMoM()">
+
+              <label style="display:flex;justify-content:space-between;font-size:.72rem;color:var(--muted);margin:8px 0 3px">
+                Excitation $V_1$: <span id="v1Val" style="color:var(--gold);font-weight:700">5.0 V</span>
+              </label>
+              <input type="range" id="v1slider" min="1" max="10" step="0.5" value="5" style="width:100%" oninput="updateMoM()">
+
+              <label style="display:flex;justify-content:space-between;font-size:.72rem;color:var(--muted);margin:8px 0 3px">
+                Excitation $V_2$: <span id="v2Val" style="color:var(--gold);font-weight:700">3.0 V</span>
+              </label>
+              <input type="range" id="v2slider" min="1" max="10" step="0.5" value="3" style="width:100%" oninput="updateMoM()">
+            </div>
+
+            <button class="solve-btn" onclick="updateMoM()">⚡ Recompute MoM Current Distribution</button>
+            <div class="solve-result" id="solveResult">Computing solution...</div>
+          </div>
+          <div class="highlight">Physical Insight: Because the Green's function $G(\mathbf{r},\mathbf{r}') \neq 0$, $Z_{12} \neq 0$. Current on Patch 2 exerts back-EMF on Patch 1. Isolated analysis yields major error!</div>
+        </div>
+      </div>
+
+    </div><!-- /mom -->
+
+    <!-- ── PARAMS TAB ── -->
+    <div class="tab-content" id="tab-params">
+
+      <div class="param-group">
+        <label>Wave Frequency <span id="freqVal">2.5</span> GHz</label>
+        <input type="range" id="freqParamSlider" min="1" max="5" step="0.5" value="2.5" oninput="setFreq(+this.value)">
+      </div>
+      <div class="param-group">
+        <label>Incident Angle $\theta_i$ <span id="angleVal">30</span>°</label>
+        <input type="range" id="angleParamSlider" min="0" max="70" step="5" value="30" oninput="setAngle(+this.value)">
+      </div>
+      <div class="param-group">
+        <label>Wave Amplitude $E_0$ <span id="ampVal">1.0</span></label>
+        <input type="range" min="0.3" max="2" step="0.1" value="1" oninput="waveAmp=+this.value;document.getElementById('ampVal').textContent=(+this.value).toFixed(1)">
+      </div>
+      <div class="param-group">
+        <label>Conductor Skin Depth <span id="skinVal" style="color:var(--gold)">PEC (Ideal, δ = 0)</span></label>
+        <input type="range" min="0" max="1" step="0.02" value="0" id="skinSlider" oninput="setSkinMode(+this.value)">
+      </div>
+      <div class="param-group">
+        <label>Simulation Speed <span id="speedVal">1.0</span>×</label>
+        <input type="range" min="0.2" max="3" step="0.1" value="1" oninput="simSpeed=+this.value;document.getElementById('speedVal').textContent=(+this.value).toFixed(1)">
+      </div>
+
+      <div class="divider"></div>
+
+      <div class="info-box gold" id="skinInfoBox">
+        <strong style="color:var(--gold)">Current Conductor Mode: PEC</strong><br>
+        Electrical conductivity $\sigma \to \infty$. All electromagnetic fields terminate strictly on the boundary. Currents are 100% surface currents with zero penetration depth.
+      </div>
+
+      <div class="info-box purple">
+        <strong style="color:var(--accent2)">Skin Effect Equation</strong><br>
+        $\delta = \sqrt{2/(\omega \mu \sigma)}$. Inside a real metal, electric and magnetic fields decay exponentially as $e^{-y/\delta}$ accompanied by a progressive phase shift of $1\text{ rad}$ per skin depth.
+      </div>
+
+    </div><!-- /params -->
+
+  </div><!-- /right-panel -->
+</div><!-- /layout -->
+
+<!-- ── MODAL: SHORTCUTS ── -->
+<div class="modal-overlay" id="modal-shortcuts" onclick="if(event.target===this)closeModal('modal-shortcuts')">
+  <div class="modal-card">
+    <button class="modal-close" onclick="closeModal('modal-shortcuts')">✕</button>
+    <h2>⌨️ Keyboard Shortcuts</h2>
+    <p>Control the electromagnetic simulation directly from your keyboard:</p>
+    <table class="shortcut-table">
+      <thead>
+        <tr><th>Key</th><th>Function</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><kbd>Space</kbd></td><td>Pause / Resume simulation animation loop</td></tr>
+        <tr><td><kbd>R</kbd></td><td>Reset time and waves to initial state</td></tr>
+        <tr><td><kbd>C</kbd></td><td>Toggle Induced Surface Current vectors ($J_s$)</td></tr>
+        <tr><td><kbd>S</kbd></td><td>Toggle Scattered Field wavefronts ($E_s$)</td></tr>
+        <tr><td><kbd>T</kbd></td><td>Toggle TM / TE polarization modes</td></tr>
+        <tr><td><kbd>P</kbd></td><td>Toggle Virtual Field Probe & Poynting Sensor HUD</td></tr>
+        <tr><td><kbd>2</kbd></td><td>Switch to 3D Perspective Wave Story page</td></tr>
+        <tr><td><kbd>?</kbd></td><td>Show this keyboard shortcuts guide</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ── MODAL: THEORY GUIDE ── -->
+<div class="modal-overlay" id="modal-theory" onclick="if(event.target===this)closeModal('modal-theory')">
+  <div class="modal-card">
+    <button class="modal-close" onclick="closeModal('modal-theory')">✕</button>
+    <h2>📖 Electromagnetics & MoM Derivation</h2>
+    <p>This laboratory visualizes the fundamental chain of electromagnetic scattering:</p>
+    <p><strong>1. Incident Wave:</strong> Maxwell's equations in source-free space yield the vector Helmholtz wave equation $\nabla^2 \vec{E} + k^2 \vec{E} = 0$, whose fundamental solutions are plane waves $\vec{E}_i(\mathbf{r})$.</p>
+    <p><strong>2. Boundary Condition on PEC:</strong> Tangential electric field components across any interface must satisfy $\hat{n} \times (\vec{E}_1 - \vec{E}_2) = 0$. In a perfect conductor $\vec{E}_2 = 0$, so $\hat{n} \times \vec{E}_{\text{total}} = 0$.</p>
+    <p><strong>3. Method of Moments (MoM):</strong> Solving the Electric Field Integral Equation (EFIE) analytically for arbitrary geometry is impossible. MoM expands $\vec{J} \approx \sum I_n \vec{f}_n$ and uses Galerkin inner-product testing to obtain the matrix equation $\mathbf{Z}\mathbf{I} = \mathbf{V}$.</p>
+    <p><strong>4. Skin Depth $\delta$:</strong> For finite conductivity $\sigma$, the wavevector becomes complex: $\gamma = \alpha + j\beta \approx (1+j)\sqrt{\omega\mu\sigma/2}$. The attenuation factor $\alpha = 1/\delta$ generates decaying eddy currents inside the conductor.</p>
+  </div>
+</div>
+
+<script>
+'use strict';
+// ══════════════════════════════════════════════════════
+//  SIMULATION ENGINE & STATE
+// ══════════════════════════════════════════════════════
+const canvas = document.getElementById('sim');
+const ctx    = canvas.getContext('2d');
+
+let playing       = true;
+let simSpeed      = 1.0;
+let waveFreq      = 2.5;   // GHz
+let waveAmp       = 1.0;
+let incidentAngle = 30 * Math.PI / 180; // radians
+let skinMode      = 0.0;   // 0 = PEC, >0 = finite conductivity
+let polarization  = 'TM';  // 'TM' (p-polarization) or 'TE' (s-polarization)
+let showCurrents  = true;
+let showScatter   = true;
+let probeActive   = true;
+let t             = 0;
+let raf;
+
+const NUM_PATCHES = 16;
+let cssW = 800, cssH = 600;
+
+// Mouse tracking for field probe
+let mouse = { x: -1, y: -1, inside: false };
+
+canvas.addEventListener('mousemove', e => {
+  const rect = canvas.getBoundingClientRect();
+  mouse.x = e.clientX - rect.left;
+  mouse.y = e.clientY - rect.top;
+  mouse.inside = true;
+});
+canvas.addEventListener('mouseleave', () => { mouse.inside = false; });
+
+// ── HiDPI Retina Canvas Resize ──
+function resize() {
+  const rect = canvas.parentElement.getBoundingClientRect();
+  const tb = canvas.parentElement.querySelector('.toolbar').offsetHeight;
+  const leg = canvas.parentElement.querySelector('.legend').offsetHeight;
+  cssW = Math.max(300, rect.width);
+  cssH = Math.max(200, rect.height - tb - leg);
+
+  const dpr = window.devicePixelRatio || 1;
+  canvas.width  = Math.floor(cssW * dpr);
+  canvas.height = Math.floor(cssH * dpr);
+  canvas.style.width  = cssW + 'px';
+  canvas.style.height = cssH + 'px';
+}
+window.addEventListener('resize', resize);
+resize();
+
+// ── Physics Helpers ──
+function setFreq(val) {
+  waveFreq = val;
+  document.getElementById('freqSlider').value = val;
+  document.getElementById('freqParamSlider').value = val;
+  document.getElementById('freqVal').textContent = val;
+}
+function setAngle(deg) {
+  incidentAngle = deg * Math.PI / 180;
+  document.getElementById('angleSlider').value = deg;
+  document.getElementById('angleParamSlider').value = deg;
+  document.getElementById('angleVal').textContent = deg;
+}
+function setSkinMode(val) {
+  skinMode = val;
+  document.getElementById('skinSlider').value = val;
+  const lbl = document.getElementById('skinVal');
+  const box = document.getElementById('skinInfoBox');
+  if (val === 0) {
+    lbl.textContent = 'PEC (Ideal, δ = 0)';
+    lbl.style.color = 'var(--gold)';
+    box.innerHTML = `<strong style="color:var(--gold)">Current Conductor Mode: PEC</strong><br>
+      Electrical conductivity σ → ∞. Fields terminate strictly on the surface boundary. All currents are true surface currents Jₛ with zero skin depth.`;
+  } else {
+    const deltaPx = (val * 35 * Math.sqrt(2.5 / waveFreq)).toFixed(1);
+    lbl.textContent = `Real Conductor (δ ≈ ${deltaPx} px)`;
+    lbl.style.color = 'var(--accent2)';
+    box.innerHTML = `<strong style="color:var(--accent2)">Current Conductor Mode: Real Metal (δ ≈ ${deltaPx} px)</strong><br>
+      Conductivity σ is finite. Electromagnetic fields penetrate the metal, decaying as e<sup>-d/δ</sup> with an internal volume current J = σE and accompanying phase lag.`;
+  }
+}
+
+function togglePolarization() {
+  polarization = (polarization === 'TM') ? 'TE' : 'TM';
+  document.getElementById('polBtn').textContent = `Polarization: ${polarization}`;
+}
+function toggleProbe() {
+  probeActive = !probeActive;
+  document.getElementById('probeBtn').classList.toggle('active', probeActive);
+}
+
+// ══════════════════════════════════════════════════════
+//  MAIN DRAWING LOOP
+// ══════════════════════════════════════════════════════
+function draw() {
+  const dpr = window.devicePixelRatio || 1;
+  ctx.save();
+  ctx.scale(dpr, dpr);
+
+  const W = cssW, H = cssH;
+  ctx.clearRect(0, 0, W, H);
+
+  // Background
+  const bg = ctx.createLinearGradient(0, 0, W, H);
+  bg.addColorStop(0, '#060a12');
+  bg.addColorStop(1, '#0b1424');
+  ctx.fillStyle = bg;
+  ctx.fillRect(0, 0, W, H);
+
+  // Conductor Geometry
+  const condY = H * 0.62;
+  const condH = H * 0.38;
+  const skinDelta = skinMode * 35 * Math.sqrt(2.5 / waveFreq);
+
+  // Conductor Body & Glow
+  const condGrad = ctx.createLinearGradient(0, condY, 0, condY + condH);
+  if (skinMode === 0) {
+    condGrad.addColorStop(0, '#2e2203');
+    condGrad.addColorStop(0.3, '#191300');
+    condGrad.addColorStop(1, '#0a0800');
+  } else {
+    condGrad.addColorStop(0, '#1c1b2c');
+    condGrad.addColorStop(0.3, '#12111d');
+    condGrad.addColorStop(1, '#090810');
+  }
+  ctx.fillStyle = condGrad;
+  ctx.fillRect(0, condY, W, condH);
+
+  // Conductor Top Edge
+  ctx.strokeStyle = (skinMode === 0) ? '#ffc857' : '#9d84f5';
+  ctx.lineWidth = 2.5;
+  ctx.beginPath();
+  ctx.moveTo(0, condY); ctx.lineTo(W, condY);
+  ctx.stroke();
+
+  // Lattice Atoms
+  ctx.fillStyle = (skinMode === 0) ? 'rgba(255,200,87,.18)' : 'rgba(157,132,245,.2)';
+  const cols = Math.floor(W / 26), rows = 5;
+  for (let r = 0; r < rows; r++) {
+    for (let c = 0; c < cols; c++) {
+      const x = 13 + c * 26, y = condY + 12 + r * 20;
+      if (y < condY + condH - 4) {
+        ctx.beginPath(); ctx.arc(x, y, 1.8, 0, Math.PI * 2); ctx.fill();
+      }
+    }
+  }
+
+  // Conductor Label
+  ctx.fillStyle = (skinMode === 0) ? 'rgba(255,200,87,.7)' : 'rgba(157,132,245,.8)';
+  ctx.font = 'bold 11px Inter, sans-serif';
+  ctx.textAlign = 'left';
+  if (skinMode === 0) {
+    ctx.fillText('PEC — Perfect Electric Conductor (σ → ∞, δ = 0)', 16, condY + condH - 12);
+  } else {
+    ctx.fillText(`Real Conductor — Finite Conductivity (Skin Depth δ ≈ ${skinDelta.toFixed(1)} px)`, 16, condY + condH - 12);
+  }
+
+  // ── Skin Depth Penetration Visualization (when skinMode > 0) ──
+  if (skinMode > 0) {
+    // Skin depth boundary line
+    ctx.save();
+    ctx.strokeStyle = 'rgba(157,132,245,.5)';
+    ctx.setLineDash([4, 4]);
+    ctx.lineWidth = 1.2;
+    ctx.beginPath();
+    ctx.moveTo(0, condY + skinDelta); ctx.lineTo(W, condY + skinDelta);
+    ctx.stroke();
+    ctx.fillStyle = 'rgba(157,132,245,.75)';
+    ctx.font = '10px JetBrains Mono, monospace';
+    ctx.fillText(`δ (1/e decay depth)`, W - 140, condY + skinDelta - 4);
+    ctx.restore();
+
+    // Volume current slices inside metal
+    const numLayers = 4;
+    for (let l = 1; l <= numLayers; l++) {
+      const depth = l * (skinDelta / 2);
+      const atten = Math.exp(-depth / skinDelta);
+      const curY = condY + depth;
+      if (curY >= condY + condH - 10) break;
+
+      const numArrows = 12;
+      for (let ai = 0; ai < numArrows; ai++) {
+        const ax = (ai + 0.5) * (W / numArrows);
+        const phase = (ax / W) * 2 * Math.PI * Math.sin(incidentAngle) * waveFreq + (depth / skinDelta);
+        const jVal = Math.sin(t * 3 - phase) * atten * waveAmp;
+        const arrowLen = jVal * 20;
+
+        ctx.save();
+        ctx.translate(ax, curY);
+        ctx.globalAlpha = Math.max(0.15, atten * 0.85);
+        drawArrow(ctx, arrowLen, 0, '#39ff8f', 1.6);
+        ctx.restore();
+      }
+    }
+  }
+
+  // ─── INCIDENT EM WAVE PROPAGATION ───
+  const k = waveFreq * 0.22;
+  const ang = incidentAngle;
+  const kx = Math.sin(ang), ky = Math.cos(ang); // pointing downwards
+
+  // Wavefront lines in free space
+  const numFronts = 7;
+  for (let row = 0; row < numFronts; row++) {
+    const phase = (row / numFronts) * Math.PI * 2;
+    const waveSep = 75 / waveFreq;
+    const baseOff = (t * 70) % waveSep - waveSep;
+
+    ctx.save();
+    ctx.translate(W * 0.5, condY * 0.45);
+    ctx.rotate(ang);
+    ctx.globalAlpha = 0.55;
+
+    const yOff = -280 + row * (540 / numFronts) + baseOff;
+    const colsCount = Math.ceil(W * 1.6 / 22);
+    ctx.beginPath();
+    for (let ci = 0; ci < colsCount; ci++) {
+      const xp = -W * 0.8 + ci * 22;
+      const ev = Math.sin(ci * k - t * 3 + phase) * 14 * waveAmp;
+      if (ci === 0) ctx.moveTo(xp, yOff + ev);
+      else ctx.lineTo(xp, yOff + ev);
+    }
+    ctx.strokeStyle = 'rgba(0,200,255,0.45)';
+    ctx.lineWidth = 1.4;
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  // Incident E-Field & H-Field Vector Grid
+  const xCols = 10, yRows = 4;
+  for (let yr = 0; yr < yRows; yr++) {
+    for (let xc = 0; xc < xCols; xc++) {
+      const px = (xc + 0.5) * (W / xCols);
+      const py = 25 + yr * ((condY - 45) / yRows);
+
+      const dist = (px * kx + py * ky) * k;
+      const waveVal = Math.sin(dist - t * 3) * waveAmp;
+
+      if (polarization === 'TM') {
+        // TM: E in xy plane, H in z plane (out of screen / into screen)
+        const ex = ky, ey = -kx; // perpendicular to k
+        const eLen = waveVal * 20;
+
+        ctx.save();
+        ctx.translate(px, py);
+        ctx.globalAlpha = Math.abs(waveVal) * 0.85;
+        drawArrow(ctx, ex * eLen, ey * eLen, '#00c8ff', 1.8);
+
+        // H-field symbol (cross or dot)
+        const hVal = Math.sin(dist - t * 3);
+        if (Math.abs(hVal) > 0.35) {
+          ctx.beginPath();
+          ctx.arc(14, 0, 4, 0, Math.PI * 2);
+          ctx.strokeStyle = '#7c5cfc';
+          ctx.lineWidth = 1.2;
+          ctx.stroke();
+          if (hVal > 0) {
+            // dot
+            ctx.beginPath(); ctx.arc(14, 0, 1.8, 0, Math.PI * 2); ctx.fillStyle = '#7c5cfc'; ctx.fill();
+          } else {
+            // cross
+            ctx.beginPath();
+            ctx.moveTo(11, -3); ctx.lineTo(17, 3);
+            ctx.moveTo(17, -3); ctx.lineTo(11, 3);
+            ctx.strokeStyle = '#7c5cfc'; ctx.stroke();
+          }
+        }
+        ctx.restore();
+      } else {
+        // TE: H in xy plane, E in z plane
+        const hx = ky, hy = -kx;
+        const hLen = waveVal * 20;
+
+        ctx.save();
+        ctx.translate(px, py);
+        ctx.globalAlpha = Math.abs(waveVal) * 0.85;
+        drawArrow(ctx, hx * hLen, hy * hLen, '#7c5cfc', 1.8);
+
+        // E-field symbol (cross or dot)
+        if (Math.abs(waveVal) > 0.35) {
+          ctx.beginPath();
+          ctx.arc(14, 0, 4, 0, Math.PI * 2);
+          ctx.strokeStyle = '#00c8ff';
+          ctx.lineWidth = 1.2;
+          ctx.stroke();
+          if (waveVal > 0) {
+            ctx.beginPath(); ctx.arc(14, 0, 1.8, 0, Math.PI * 2); ctx.fillStyle = '#00c8ff'; ctx.fill();
+          } else {
+            ctx.beginPath();
+            ctx.moveTo(11, -3); ctx.lineTo(17, 3);
+            ctx.moveTo(17, -3); ctx.lineTo(11, 3);
+            ctx.strokeStyle = '#00c8ff'; ctx.stroke();
+          }
+        }
+        ctx.restore();
+      }
+    }
+  }
+
+  // ─── INDUCED SURFACE CURRENTS Jₛ ───
+  if (showCurrents) {
+    const patchW = W / NUM_PATCHES;
+    for (let i = 0; i < NUM_PATCHES; i++) {
+      const cx = patchW * i + patchW / 2;
+      const cy = condY;
+      const phaseDelay = (cx / W) * 2 * Math.PI * Math.sin(ang) * waveFreq;
+      const jval = Math.sin(t * 3 - phaseDelay) * waveAmp;
+
+      // Current pulse glow on surface
+      const glow = ctx.createRadialGradient(cx, cy, 0, cx, cy, 26 + Math.abs(jval) * 18);
+      glow.addColorStop(0, `rgba(57,255,143,${0.28 * Math.abs(jval)})`);
+      glow.addColorStop(1, 'transparent');
+      ctx.fillStyle = glow;
+      ctx.fillRect(cx - 40, cy - 40, 80, 80);
+
+      // Current arrow along surface
+      const arrowLen = jval * 28;
+      ctx.save();
+      ctx.translate(cx, cy - 7);
+      ctx.globalAlpha = 0.9;
+      drawArrow(ctx, arrowLen, 0, '#39ff8f', 2.4);
+      ctx.restore();
+
+      // Electron dot
+      ctx.fillStyle = `rgba(57,255,143,${0.6 + Math.abs(jval) * 0.4})`;
+      ctx.beginPath(); ctx.arc(cx, cy, 3.5, 0, Math.PI * 2); ctx.fill();
+    }
+
+    ctx.save();
+    ctx.fillStyle = '#39ff8f';
+    ctx.font = 'bold 11px Inter, sans-serif';
+    ctx.fillText('⟷ Jₛ Surface Current', 14, condY - 18);
+    ctx.restore();
+  }
+
+  // ─── SCATTERED WAVE RE-RADIATION ───
+  if (showScatter) {
+    const patchW = W / NUM_PATCHES;
+    ctx.save();
+
+    for (let i = 0; i < NUM_PATCHES; i += 2) {
+      const sx = patchW * i + patchW / 2;
+      const sy = condY;
+
+      for (let ring = 0; ring < 5; ring++) {
+        const lag = ring / 5;
+        const radius = ((t * 52 - lag * 110) % 240 + 240) % 240;
+        const progress = radius / 240;
+        const alpha = (1 - progress) * 0.32 * waveAmp;
+
+        if (radius > 4) {
+          ctx.beginPath();
+          ctx.arc(sx, sy, radius, Math.PI, 0); // upward hemisphere
+          ctx.strokeStyle = `rgba(255,107,107,${alpha})`;
+          ctx.lineWidth = 1.4;
+          ctx.stroke();
+        }
+      }
+    }
+
+    ctx.fillStyle = '#ff6b6b';
+    ctx.font = 'bold 11px Inter, sans-serif';
+    ctx.textAlign = 'right';
+    ctx.fillText('Eₛ (Scattered Radiation) ↗', W - 14, condY - 18);
+    ctx.restore();
+  }
+
+  // ─── ANGLE ARC & NORMAL ───
+  if (incidentAngle > 0) {
+    ctx.save();
+    const cx = W * 0.45;
+    ctx.strokeStyle = 'rgba(255,200,87,.5)';
+    ctx.setLineDash([4, 4]);
+    ctx.lineWidth = 1.2;
+    // normal
+    ctx.beginPath(); ctx.moveTo(cx, condY - 80); ctx.lineTo(cx, condY); ctx.stroke();
+    // incident ray
+    ctx.setLineDash([]);
+    ctx.strokeStyle = 'rgba(0,200,255,.6)';
+    ctx.beginPath();
+    ctx.moveTo(cx, condY);
+    ctx.lineTo(cx - Math.sin(ang) * 95, condY - Math.cos(ang) * 95);
+    ctx.stroke();
+    // arc
+    ctx.beginPath();
+    ctx.arc(cx, condY, 35, -Math.PI / 2, -Math.PI / 2 - ang, true);
+    ctx.strokeStyle = '#ffc857'; ctx.lineWidth = 1.5; ctx.stroke();
+    ctx.fillStyle = '#ffc857';
+    ctx.font = 'bold 10px Inter, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText(`θᵢ=${Math.round(ang * 180 / Math.PI)}°`, cx - 22, condY - 45);
+    ctx.restore();
+  }
+
+  // ─── VIRTUAL FIELD PROBE & HUD ───
+  if (probeActive && mouse.inside && mouse.x > 0 && mouse.y > 0) {
+    drawFieldProbeHUD(ctx, mouse.x, mouse.y, W, H, condY, k, kx, ky, skinDelta);
+  }
+
+  ctx.restore();
+}
+
+// ── Probe Calculation & Drawing ──
+function drawFieldProbeHUD(ctx, mx, my, W, H, condY, k, kx, ky, skinDelta) {
+  // Reticle
+  ctx.save();
+  ctx.strokeStyle = '#00c8ff';
+  ctx.lineWidth = 1.5;
+  ctx.beginPath();
+  ctx.arc(mx, my, 8, 0, Math.PI * 2);
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.moveTo(mx - 14, my); ctx.lineTo(mx + 14, my);
+  ctx.moveTo(mx, my - 14); ctx.lineTo(mx, my + 14);
+  ctx.stroke();
+
+  // Field computation at probe location
+  let region = '', eMag = 0, hMag = 0, sMag = 0, statusText = '';
+  const dist = (mx * kx + my * ky) * k;
+  const rawPhase = dist - t * 3;
+
+  if (my < condY - 3) {
+    region = 'Free Space (Dielectric Interface)';
+    eMag = Math.abs(Math.sin(rawPhase)) * waveAmp * 100;
+    hMag = (eMag / 376.73).toFixed(3);
+    sMag = (eMag * hMag).toFixed(2);
+    statusText = `Transverse Wave (η = 377 Ω)`;
+  } else if (Math.abs(my - condY) <= 3) {
+    region = 'PEC Surface Boundary S';
+    eMag = (0.0).toFixed(1); // tangential cancellation
+    hMag = (2 * Math.abs(Math.sin(rawPhase)) * waveAmp / 376.73).toFixed(3);
+    sMag = '0.00 (Pure Reactive / Reflection)';
+    statusText = `BC Satisfied: n̂ × E_total = 0`;
+  } else {
+    // inside conductor
+    const depth = my - condY;
+    if (skinMode === 0) {
+      region = 'PEC Bulk (Interior)';
+      eMag = (0.0).toFixed(1);
+      hMag = (0.0).toFixed(3);
+      sMag = '0.00';
+      statusText = `Inside Ideal Conductor: E=0, H=0`;
+    } else {
+      region = `Conductive Bulk (Depth: ${depth.toFixed(0)}px)`;
+      const atten = Math.exp(-depth / Math.max(1, skinDelta));
+      eMag = (atten * waveAmp * 60).toFixed(1);
+      hMag = (eMag / 250).toFixed(3);
+      sMag = (eMag * hMag).toFixed(2);
+      statusText = `Decay: e^(-d/δ) = ${(atten * 100).toFixed(1)}%`;
+    }
+  }
+
+  // Floating HUD Box
+  let hx = mx + 16, hy = my - 85;
+  if (hx + 200 > W) hx = mx - 210;
+  if (hy < 10) hy = my + 20;
+
+  ctx.fillStyle = 'rgba(13, 21, 32, 0.9)';
+  ctx.strokeStyle = 'rgba(0, 200, 255, 0.4)';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.roundRect(hx, hy, 195, 78, 8);
+  ctx.fill(); ctx.stroke();
+
+  ctx.font = 'bold 10px Inter, sans-serif';
+  ctx.fillStyle = '#00c8ff';
+  ctx.fillText(`PROBE [${mx.toFixed(0)}, ${my.toFixed(0)}]`, hx + 10, hy + 14);
+
+  ctx.font = '9px Inter, sans-serif';
+  ctx.fillStyle = '#a8bcd4';
+  ctx.fillText(region, hx + 10, hy + 28);
+
+  ctx.font = '10px JetBrains Mono, monospace';
+  ctx.fillStyle = '#ffc857';
+  ctx.fillText(`|E|: ${typeof eMag === 'number' ? eMag.toFixed(1) : eMag} V/m`, hx + 10, hy + 44);
+  ctx.fillText(`|H|: ${hMag} A/m`, hx + 100, hy + 44);
+
+  ctx.fillStyle = '#39ff8f';
+  ctx.fillText(`|S|: ${sMag} W/m²`, hx + 10, hy + 58);
+
+  ctx.font = '9px Inter, sans-serif';
+  ctx.fillStyle = '#7c94b2';
+  ctx.fillText(statusText, hx + 10, hy + 71);
+
+  ctx.restore();
+}
+
+function drawArrow(ctx, dx, dy, color, lw) {
+  if (Math.abs(dx) < 0.4 && Math.abs(dy) < 0.4) return;
+  const len = Math.sqrt(dx * dx + dy * dy);
+  const ux = dx / len, uy = dy / len;
+  const hLen = Math.min(9, len * 0.42);
+
+  ctx.strokeStyle = color;
+  ctx.fillStyle   = color;
+  ctx.lineWidth   = lw;
+  ctx.beginPath();
+  ctx.moveTo(-dx / 2, -dy / 2);
+  ctx.lineTo(dx / 2, dy / 2);
+  ctx.stroke();
+
+  ctx.beginPath();
+  ctx.moveTo(dx / 2, dy / 2);
+  ctx.lineTo(dx / 2 - hLen * (ux + uy * 0.4), dy / 2 - hLen * (uy - ux * 0.4));
+  ctx.lineTo(dx / 2 - hLen * (ux - uy * 0.4), dy / 2 - hLen * (uy + ux * 0.4));
+  ctx.closePath();
+  ctx.fill();
+}
+
+// ── Animation Loop ──
+let lastTime = null;
+function animate(ts) {
+  if (lastTime === null) lastTime = ts;
+  const dt = Math.min((ts - lastTime) / 1000, 0.05);
+  lastTime = ts;
+
+  if (playing) {
+    t += dt * simSpeed;
+  }
+  draw();
+  raf = requestAnimationFrame(animate);
+}
+raf = requestAnimationFrame(animate);
+
+// ── Toolbar Controls ──
+function togglePlay() {
+  playing = !playing;
+  document.getElementById('playBtn').textContent = playing ? '⏸ Pause' : '▶ Play';
+}
+function resetSim() {
+  t = 0; lastTime = null; playing = true;
+  document.getElementById('playBtn').textContent = '⏸ Pause';
+}
+function toggleCurrents() {
+  showCurrents = !showCurrents;
+  document.getElementById('showCurrBtn').classList.toggle('active', showCurrents);
+}
+function toggleScatter() {
+  showScatter = !showScatter;
+  document.getElementById('showScatBtn').classList.toggle('active', showScatter);
+}
+
+// ── Tab & Card Switching ──
+function switchTab(name) {
+  document.querySelectorAll('.tab').forEach((tb, i) => {
+    const names = ['physics', 'mom', 'params'];
+    tb.classList.toggle('active', names[i] === name);
+  });
+  document.querySelectorAll('.tab-content').forEach(c => {
+    c.classList.toggle('active', c.id === 'tab-' + name);
+  });
+}
+function toggleCard(id) {
+  document.getElementById(id).classList.toggle('open');
+}
+
+// ── Modal Handlers ──
+function openModal(id) { document.getElementById(id).classList.add('open'); }
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+
+// ── Method of Moments 2-Patch Live Solver ──
+function updateMoM() {
+  const d_lambda = +document.getElementById('distSlider').value;
+  const V1 = +document.getElementById('v1slider').value;
+  const V2 = +document.getElementById('v2slider').value;
+
+  document.getElementById('distVal').textContent = `${d_lambda.toFixed(2)} λ`;
+  document.getElementById('v1Val').textContent = `${V1.toFixed(1)} V`;
+  document.getElementById('v2Val').textContent = `${V2.toFixed(1)} V`;
+  document.getElementById('cell-v1').textContent = `${V1.toFixed(1)} V`;
+  document.getElementById('cell-v2').textContent = `${V2.toFixed(1)} V`;
+
+  // Self impedance and mutual coupling calculation
+  const Z11 = 50.0, Z22 = 50.0;
+  // Realistic mutual impedance magnitude from dipole/patch Green's function
+  const Z12 = +(42 * Math.sin(2 * Math.PI * d_lambda) / (2 * Math.PI * d_lambda)).toFixed(1);
+  const Z21 = Z12;
+
+  document.getElementById('cell-z11').textContent = Z11.toFixed(1);
+  document.getElementById('cell-z22').textContent = Z22.toFixed(1);
+  document.getElementById('cell-z12').textContent = Z12.toFixed(1);
+  document.getElementById('cell-z21').textContent = Z21.toFixed(1);
+
+  // Determinant and inversion (Cramer's rule)
+  const det = Z11 * Z22 - Z12 * Z21;
+  const I1 = (V1 * Z22 - V2 * Z12) / det;
+  const I2 = (V2 * Z11 - V1 * Z21) / det;
+
+  document.getElementById('cell-i1').textContent = `${I1.toFixed(3)} A`;
+  document.getElementById('cell-i2').textContent = `${I2.toFixed(3)} A`;
+
+  // Uncoupled naive approximation
+  const I1_naive = V1 / Z11;
+  const I2_naive = V2 / Z22;
+  const couplingErr = Math.abs((I1 - I1_naive) / I1 * 100).toFixed(1);
+
+  const res = document.getElementById('solveResult');
+  res.innerHTML = `<strong>MoM Exact Solution:</strong>
+  I₁ = <span style="color:#39ff8f">${I1.toFixed(4)} A</span>  |  I₂ = <span style="color:#39ff8f">${I2.toFixed(4)} A</span>
+
+<strong>Isolated Guess (No Coupling):</strong>
+  I₁ = ${I1_naive.toFixed(4)} A  |  I₂ = ${I2_naive.toFixed(4)} A
+
+<strong>Mutual Coupling Deviation:</strong> <span style="color:#ffc857">${couplingErr}%</span>
+Matrix Det: det(Z) = ${det.toFixed(1)} Ω²`;
+}
+updateMoM();
+
+// ── Global Keyboard Shortcuts ──
+window.addEventListener('keydown', e => {
+  if (e.target.tagName === 'INPUT') return;
+  if (e.code === 'Space') {
+    e.preventDefault(); togglePlay();
+  } else if (e.key === 'r' || e.key === 'R') {
+    resetSim();
+  } else if (e.key === 'c' || e.key === 'C') {
+    toggleCurrents();
+  } else if (e.key === 's' || e.key === 'S') {
+    toggleScatter();
+  } else if (e.key === 't' || e.key === 'T') {
+    togglePolarization();
+  } else if (e.key === 'p' || e.key === 'P') {
+    toggleProbe();
+  } else if (e.key === '2') {
+    window.location.href = 'simulation2.html';
+  } else if (e.key === '?') {
+    openModal('modal-shortcuts');
+  }
+});
+</script>
+</body>
+</html>
