@@ -5,6 +5,8 @@
 [![KaTeX Powered](https://img.shields.io/badge/Math-KaTeX%20Rendered-ffc857.svg)](https://katex.org/)
 [![HTML5 Canvas](https://img.shields.io/badge/Graphics-HTML5%20Canvas%202D%20%26%203D-00c8ff.svg)]()
 
+Built with Google Antigravity
+
 An interactive, scientifically rigorous, and visually stunning web-based physics simulation suite demonstrating:
 1. **How incident electromagnetic waves induce electric currents on conducting surfaces.**
 2. **How those induced surface currents re-radiate to form scattered fields.**
